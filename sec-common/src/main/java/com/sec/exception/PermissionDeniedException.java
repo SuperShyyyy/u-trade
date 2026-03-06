@@ -1,4 +1,10 @@
 package com.sec.exception;
 
-public class PermissionDeniedException {
+public class PermissionDeniedException extends BaseException{
+    public PermissionDeniedException() {
+    }
+
+    public PermissionDeniedException(String msg) {
+        super(msg);
+    }
 }

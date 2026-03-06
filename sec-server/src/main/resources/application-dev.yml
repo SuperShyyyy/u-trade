@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: sec-server
+  datasource:
+    # 基础连接信息
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${sec.datasource.host:localhost}:${sec.datasource.port:3306}/sec-trade?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false
+    username: root
+    password: ${sec.datasource.password:cms321321}
+    # Druid 特定配置项
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      # 开启监控统计功能
+      filters: stat,wall,slf4j
+
+# MyBatis Plus 配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+# 业务自定义节点 (用于动态引用)
+sec:
+  datasource:
+    host: localhost
+    port: 3306
+    password: cms321321
+  jwt:
+    admin-secret-key: sec_trade_admin_secret_key_fixed_123456
+    admin-ttl: 7200000
+    admin-token-name: token
+    user-secret-key: sec_trade_user_secret_key_fixed_654321
+    user-ttl: 7200000
+    user-token-name: token

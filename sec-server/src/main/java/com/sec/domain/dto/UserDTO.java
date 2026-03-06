@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Data
 @ApiModel(description = "用户信息修改请求对象")
-public class UserUpdateDTO implements Serializable {
+public class UserDTO implements Serializable {
 
     @ApiModelProperty("用户名")
     private String username;

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Data
 @ApiModel(description = "用户收藏列表展示对象")
-public class FavoritesVO implements Serializable {
+public class FavoriteVO implements Serializable {
 
     @ApiModelProperty("收藏记录ID")
     private Long id;
