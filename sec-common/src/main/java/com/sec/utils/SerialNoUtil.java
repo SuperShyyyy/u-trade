@@ -42,12 +42,20 @@ public class SerialNoUtil {
         return LocalDateTime.now().format(FORMATTER);
     }
 
+
+    public static String generateRechargeNo() {return "RECHARGE"+ now() + random6();}
+
+
+    public static String generateWithdrawNo() {return "WITHDRAW"+ now() + random6();}
+
     /**
-     * 生成4位随机数，前面补0
+     * 生成6位随机数，前面补0
      */
     private static String random6() {
         int num = RANDOM.nextInt(1000000); // 0~9999
         return String.format("%06d", num);
     }
+
+
 
 }

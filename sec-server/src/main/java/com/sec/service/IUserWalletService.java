@@ -1,7 +1,16 @@
 package com.sec.service;
 
+import com.sec.domain.dto.WalletLogQueryDTO;
+import com.sec.domain.dto.WalletRechargeDTO;
+import com.sec.domain.dto.WalletWithdrawDTO;
 import com.sec.domain.po.UserWallet;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.sec.domain.vo.UserWalletVO;
+import com.sec.domain.vo.WalletLogVO;
+import com.sec.result.PageDTO;
+import jakarta.validation.Valid;
+
+import java.math.BigDecimal;
 
 /**
  * <p>
@@ -13,4 +22,22 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IUserWalletService extends IService<UserWallet> {
 
+    UserWalletVO getWallet();
+
+    PageDTO<WalletLogVO> getWalletLog(WalletLogQueryDTO dto);
+
+    void recharge(@Valid WalletRechargeDTO dto);
+
+    void withdraw(@Valid WalletWithdrawDTO dto);
+
+    // 支付回调
+    void handleRechargeSuccess(String bizOrderNo);
+
+    // 冻结金额（下单）
+    void freezeAmount(Long userId, BigDecimal amount, String orderNo);
+
+    // 解冻金额（订单取消）
+    void unfreezeAmount(Long userId, BigDecimal amount, String orderNo);
+
+    void transferFrozenToSeller(Long buyerId, Long sellerId, BigDecimal amount, String orderNo);
 }
