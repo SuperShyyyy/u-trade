@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-03-04
  */
 @RestController
-@RequestMapping("/wallet-logs")
+@RequestMapping("/user/wallet/logs")
 public class WalletLogController {
 
 }

@@ -1,19 +1,17 @@
 package com.sec.result;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.beans.PropertyVetoException;
+import java.io.Serializable;
 import java.util.List;
-import java.util.PrimitiveIterator;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PageDTO<T> {
+public class PageDTO<T> implements Serializable {
     private Long total;     // 总记录数
     private Long pages;     // 总页数
     private Long current;   // 当前页码

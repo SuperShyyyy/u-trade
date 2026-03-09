@@ -22,7 +22,7 @@ import java.util.List;
  * @since 2026-03-04
  */
 @RestController
-@RequestMapping("/category")
+@RequestMapping("/user/category")
 @RequiredArgsConstructor
 public class CategoryController {
     private final ICategoryService categoryService;

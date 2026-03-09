@@ -228,7 +228,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
 
     @Override
-    public Result<PageDTO<UserVO>> pageQueryUser(int page, int pageSize){
+    public PageDTO<UserVO> pageQueryUser(int page, int pageSize){
 
         String currentRole = BaseContext.getCurrentRole();
         if (!"1".equals(currentRole) && !"2".equals(currentRole)) {
@@ -256,7 +256,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             return vo;
         });
 
-        return Result.success(PageDTO.of(voPage));
+        return PageDTO.of(voPage);
     }
     @Override
     public void updateUserStatus(Long id, Integer status) {

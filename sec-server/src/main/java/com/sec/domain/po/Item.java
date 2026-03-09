@@ -50,7 +50,7 @@ public class Item implements Serializable {
     @ApiModelProperty(value = "图片URL列表，逗号分隔")
     private String images;
 
-    @ApiModelProperty(value = "1-上架, 0-下架, -1-已售, -2-审核中")
+    @ApiModelProperty(value = "2-锁定 1-上架, 0-下架, -1-已售, -2-审核中")
     private Integer status;
 
     @ApiModelProperty(value = "审核状态: 0-待审核, 1-通过, -1-拒绝")

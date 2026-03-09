@@ -59,7 +59,7 @@ public class AdminController {
     }
 
     @ApiOperation("创建管理员账号")
-    @PostMapping("/system/users")
+    @PostMapping("/system/user")
     public Result save(@RequestBody AdminDTO adminDTO) {
         log.info("创建新管理员账号: {}", adminDTO.getUsername());
         adminService.saveAdmin(adminDTO);
@@ -67,14 +67,14 @@ public class AdminController {
     }
 
     @ApiOperation("删除管理员账户")
-    @DeleteMapping("/system/users/{id}")
+    @DeleteMapping("/system/user/{id}")
     public Result delete(@PathVariable("id") Long adminId) {
         adminService.deleteAdminById(adminId);
         return Result.success();
     }
     
     @ApiOperation("修改管理员状态")
-    @PutMapping("/system/users/{id}/status")
+    @PutMapping("/system/user/{id}/status")
     public Result updateAdminStatus(
             @PathVariable Long id,
             @RequestParam Integer status) {
@@ -89,10 +89,11 @@ public class AdminController {
     * */
     @ApiOperation("管理端查询用户")
     @GetMapping("/user")
-    public Result<PageDTO<UserVO>> pageQueryUser(@RequestParam(defaultValue = "1") int page,
-                                                 @RequestParam(defaultValue = "10") int pageSize
-                                                 ){
-        return adminService.pageQueryUser(page,pageSize);
+    public Result<PageDTO<UserVO>> pageQueryUser(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize
+    ){
+        return Result.success(adminService.pageQueryUser(page,pageSize));
     }
     /*
     * 管理端修改用户状态

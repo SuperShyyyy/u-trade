@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Api(tags = "商品接口")
 @RestController
-@RequestMapping("/items")
+@RequestMapping("/user/item")
 @RequiredArgsConstructor
 public class ItemController {
     private final IItemService itemsService;

@@ -31,5 +31,5 @@ public interface IAdminService extends IService<Admin> {
 
     void updateUserStatus(Long id, Integer status);
 
-    Result<PageDTO<UserVO>> pageQueryUser(int page, int pageSize);
+    PageDTO<UserVO> pageQueryUser(int page, int pageSize);
 }

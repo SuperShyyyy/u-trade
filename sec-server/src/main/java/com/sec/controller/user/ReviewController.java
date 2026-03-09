@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
  * </p>
  *
  * @author author
- * @since 2026-03-04
+ * @since 2026-03-08
  */
 @RestController
-@RequestMapping("/reviews")
+@RequestMapping("/user/review")
 public class ReviewController {
 
 }
