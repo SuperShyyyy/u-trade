@@ -1,14 +1,11 @@
 package com.sec.result;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.beans.PropertyVetoException;
 import java.util.List;
-import java.util.PrimitiveIterator;
 
 @Data
 @AllArgsConstructor
