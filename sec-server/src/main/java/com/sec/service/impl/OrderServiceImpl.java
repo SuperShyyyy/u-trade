@@ -19,12 +19,11 @@ import com.sec.exception.BusinessException;
 import com.sec.mapper.OrderMapper;
 import com.sec.mapper.PaymentMapper;
 import com.sec.mapper.ShipmentMapper;
+import com.sec.message.WalletSettlementMessage;
+import com.sec.mq.sender.WalletSettlementSender;
 import com.sec.result.PageDTO;
-import com.sec.service.IItemService;
-import com.sec.service.IOrderService;
+import com.sec.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sec.service.IShipmentService;
-import com.sec.service.IUserAddressService;
 import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +61,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final StringRedisTemplate stringRedisTemplate;
     private final RedisTemplate redisTemplate ;
     private final IItemService itemService;
-
+    private final IUserWalletService userWalletService;
+    private final WalletSettlementSender walletSettlementSender;
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
@@ -149,7 +149,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }
             throw new BusinessException("订单状态异常，无法支付 (当前状态:" + order.getStatus() + ")");
         }
-
+        userWalletService.freezeAmount(
+                order.getBuyerId(),
+                order.getTotalPrice(),
+                order.getOrderNo()
+        );
         // 2. 创建支付记录
         Payment payment = new Payment()
                 .setOrderId(order.getId())
@@ -322,6 +326,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return orderVO;
     }
 
+
+    /*
+    * 取消订单 只能取消已下单 未支付的
+    * */
     @Transactional
     @Override
     public void userCancelById(Long orderId) throws Exception {
@@ -358,8 +366,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long orderId) {
         Long userId = BaseContext.getCurrentId();
-
-        // 1. 查询订单（需包含 version 以便触发 MP 乐观锁）
+        // 1. 查询订单
         Order order = lambdaQuery()
                 .eq(Order::getBuyerId, userId)
                 .eq(Order::getId, orderId)
@@ -397,9 +404,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!shipmentUpdated) {
             log.warn("订单 {} 已确认收货，但同步物流表状态失败，可能状态不一致", orderId);
         }
-
+        // 5. 更新缓存
         clearOrderCache(order);
-        // 5. TODO: 资金结算逻辑 调用 WalletService
+
+        // 6. 资金结算 调用 WalletService
+        userWalletService.transferFrozenToSeller(
+                order.getBuyerId(),
+                order.getSellerId(),
+                order.getTotalPrice(),
+                order.getOrderNo()
+        );
     }
 
     @Override
@@ -433,11 +447,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 只删除状态实际变更的订单缓存
         orders.forEach(order -> clearOrderCache(order));
-
-        //4. 结算：建议这里使用异步或消息队列，不要在定时任务里阻塞结算
-        // todo
+        //4. 结算 使用异步或消息队列，避免在定时任务里阻塞结算
         for (Order order : orders) {
-            // walletService.settle(order);
+            WalletSettlementMessage msg = new WalletSettlementMessage(
+                    order.getBuyerId(),
+                    order.getSellerId(),
+                    order.getTotalPrice(),
+                    order.getOrderNo()
+            );
+            walletSettlementSender.send(msg);
         }
 
     }

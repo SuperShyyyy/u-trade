@@ -22,7 +22,11 @@ spring:
       test-on-borrow: false
       test-on-return: false
       filters: stat,wall,slf4j
-
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

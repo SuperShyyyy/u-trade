@@ -98,30 +98,25 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         });
         return PageDTO.of(voLogs);
     }
+
+    // todo 充值
     @Transactional
     @Override
     public void recharge(WalletRechargeDTO dto) {
-
         Long userId = BaseContext.getCurrentId();
-
         String bizOrderNo = SerialNoUtil.generateRechargeNo();
-
-        // 写充值记录
+        // 充值记录
         WalletRecharge record = new WalletRecharge();
         record.setUserId(userId);
         record.setAmount(dto.getAmount());
         record.setBizOrderNo(bizOrderNo);
         record.setStatus(0); // WAIT_PAY
         record.setCreateTime(LocalDateTime.now());
-
         walletRechargeMapper.insert(record);
-
         // 调用支付接口
         // payService.createPayOrder()
-
     }
-
-
+    // todo 提现
     @Transactional
     @Override
     public void withdraw(WalletWithdrawDTO dto) {
