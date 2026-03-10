@@ -98,4 +98,7 @@ public class Order implements Serializable {
 
     @ApiModelProperty("发货时间")
     private LocalDateTime shippedAt;
+
+    @ApiModelProperty("退款原因 0 超时未支付 1 用户取消 2 商家原因")
+    private LocalDateTime cancelReason;
 }

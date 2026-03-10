@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.sec.constant.ItemStatusConstant;
-import com.sec.constant.OrderStatusConstant;
-import com.sec.constant.RedisConstant;
-import com.sec.constant.ShipmentStatusConstant;
+import com.sec.constant.*;
 import com.sec.context.BaseContext;
 import com.sec.domain.dto.OrderPaymentDTO;
 import com.sec.domain.dto.OrderSubmitDTO;
@@ -30,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -160,7 +158,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .setUserId(order.getBuyerId())
                 .setAmount(order.getTotalPrice())
                 .setMethod(dto.getPayType().toString())
-                .setStatus(OrderStatusConstant.PAID)
+                .setStatus(PaymentStatusConstant.SUCCESS)
                 .setPaymentNo(SerialNoUtil.generatePayNo())
                 .setPaidAt(LocalDateTime.now())
                 .setCreatedAt(LocalDateTime.now());
@@ -423,7 +421,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         List<Order> orders = lambdaQuery()
                 .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
                 .lt(Order::getUpdatedAt, LocalDateTime.now().minusDays(7))
-                .last("limit 1000")
+                .last("limit 50")
                 .list();
         if (orders.isEmpty()) {
             return;
@@ -460,38 +458,62 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     }
 
+    // 添加定时任务
+    @Override
+    @Transactional
+    public void autoCancelTimeoutOrders() {
+
+        LocalDateTime timeout = LocalDateTime.now().minusMinutes(30);
+
+        List<Long> ids = lambdaQuery()
+                .select(Order::getId)
+                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
+                .lt(Order::getCreatedAt, timeout)
+                .last("limit 100")
+                .list()
+                .stream()
+                .map(Order::getId)
+                .toList();
+
+        if (ids.isEmpty()) {
+            return;
+        }
+
+        lambdaUpdate()
+                .in(Order::getId, ids)
+                .set(Order::getStatus, OrderStatusConstant.CANCELLED)
+                .set(Order::getCancelledAt, LocalDateTime.now())
+                .set(Order::getCancelReason, "超时未支付自动取消")
+                .update();
+    }
+
+
     private void clearOrderCache(Order order) {
-        Long orderId = order.getId();
-        Long buyerId = order.getBuyerId();
-        Long sellerId = order.getSellerId();
 
-        Set<String> allKeys = new HashSet<>();
+        Set<String> keys = new HashSet<>();
 
-        // 1. 订单详情
-        allKeys.add(RedisConstant.ORDER_DETAILS + orderId);
-        // 2. 买家订单列表
-        if (buyerId != null) {
-            Set<String> buyerKeys = redisTemplate.keys(RedisConstant.ORDER_PAGE_QUERY_BUYER + buyerId + "*");
-            if (buyerKeys != null) allKeys.addAll(buyerKeys);
-        }
-        // 3. 卖家订单列表
-        if (sellerId != null) {
-            Set<String> sellerKeys = redisTemplate.keys(RedisConstant.ORDER_PAGE_QUERY_SELLER + sellerId + "*");
-            if (sellerKeys != null) allKeys.addAll(sellerKeys);
+        // 订单详情
+        keys.add(RedisConstant.ORDER_DETAILS + order.getId());
 
-            // 4. 卖家商品列表
-            Set<String> itemKeys = redisTemplate.keys(RedisConstant.ITEM_LIST_SELLER + sellerId + ":*");
-            if (itemKeys != null) allKeys.addAll(itemKeys);
+        // 买家订单缓存
+        if (order.getBuyerId() != null) {
+            keys.add(RedisConstant.ORDER_PAGE_QUERY_BUYER + order.getBuyerId());
         }
 
-        // 5. 商品详情缓存
+        // 卖家订单缓存
+        if (order.getSellerId() != null) {
+            keys.add(RedisConstant.ORDER_PAGE_QUERY_SELLER + order.getSellerId());
+            keys.add(RedisConstant.ITEM_LIST_SELLER + order.getSellerId());
+        }
+
+        // 商品详情
         if (order.getItemId() != null) {
-            allKeys.add(RedisConstant.ITEM_DETAIL + order.getItemId());
+            keys.add(RedisConstant.ITEM_DETAIL + order.getItemId());
         }
 
-        if (!allKeys.isEmpty()) {
-            redisTemplate.delete(allKeys);
-            log.debug("已清除订单 {} 相关的 {} 个缓存 Key", orderId, allKeys.size());
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(keys);
+            log.debug("清除订单缓存: {}", keys);
         }
     }
 }

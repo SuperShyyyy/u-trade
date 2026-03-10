@@ -54,4 +54,6 @@ public interface IOrderService extends IService<Order> {
      * 发货7天以上的订单 自动确认收货
      */
     void autoConfirm();
+
+    void autoCancelTimeoutOrders();
 }
