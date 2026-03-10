@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sec.constant.JwtClaimsConstant;
+import com.sec.constant.RoleConstant;
 import com.sec.context.BaseContext;
 import com.sec.domain.dto.AdminDTO;
 import com.sec.domain.dto.LoginDTO;
@@ -52,7 +53,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Override
     public LoginVO adminLogin(LoginDTO loginDTO) {
         // 1. 根据账号查询管理员
-        // 直接使用父类 ServiceImpl 提供的 lambdaQuery() 方法
         Admin admin = lambdaQuery()
                 .eq(Admin::getUsername, loginDTO.getUsername())
                 .one();
@@ -78,25 +78,25 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         String roleStr;
 
         if (dbRole == 2) {
-            roleStr = "2"; // 超级管理员
+            roleStr = RoleConstant.SUPER_ADMIN; // 超级管理员
         } else {
             // 兜底策略：默认视为普通管理员 (包括 dbRole==1 或 null 的情况)
-            roleStr = "1";
+            roleStr = RoleConstant.COMMON_ADMIN;
         }
 
         // 6. 构造 JWT Claims
         Map<String, Object> claims = new HashMap<>();
 
-        // [关键] 统一 ID 字段
+        // 统一 ID 字段
         claims.put(JwtClaimsConstant.CURRENT_ID, admin.getId());
 
-        // [关键] 角色标识 ("1" 或 "2")
+        // 角色标识 (COMMON_ADMIN / SUPER_ADMIN)
         claims.put(JwtClaimsConstant.ROLE, roleStr);
 
-        // [关键] 来源标识
+        // 来源标识
         claims.put(JwtClaimsConstant.SOURCE_TYPE, "ADMIN");
 
-        // 7. 生成 Token (使用管理员专属密钥)
+        // 7. 生成 Token
         String token = JwtUtil.createJWT(
                 jwtProperties.getAdminSecretKey(), // 管理员专属密钥 (与 User 不同)
                 jwtProperties.getAdminTtl(),       // 管理员 Token 有效期
@@ -116,7 +116,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     public PageDTO<AdminVO> pageQuery(int page, int pageSize) {
         // 1 权限校验
         String role = BaseContext.getCurrentRole();
-        if (!"2".equals(role)) {
+        if (!RoleConstant.SUPER_ADMIN.equals(role)) {
             throw new PermissionDeniedException("权限不足");
         }
         // 2 构建分页对象
@@ -148,7 +148,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Override
     public void saveAdmin(AdminDTO adminDTO){
         String currentRole = BaseContext.getCurrentRole();
-        if (!"2".equals(currentRole)) {
+        if (! RoleConstant.SUPER_ADMIN.equals(currentRole)) {
             throw new PermissionDeniedException("权限不足，仅超级管理员可创建账号");
         }
         // 2. 检查账号是否已存在
@@ -176,7 +176,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     public void updateAdminStatus(Long id, Integer status) {
         // 1 身份校验
         String currentRole = BaseContext.getCurrentRole();
-        if ( !"2".equals(currentRole)) {
+        if ( ! RoleConstant.SUPER_ADMIN.equals(currentRole)) {
             throw new PermissionDeniedException("权限不足，无法执行删除");
         }
         // 2 目标非空校验
@@ -205,7 +205,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     public void deleteAdminById(Long adminId) {
         // 1 仅超级管理员可操作
         String currentRole = BaseContext.getCurrentRole();
-        if (!"2".equals(currentRole)) {
+        if (!RoleConstant.SUPER_ADMIN.equals(currentRole)) {
             throw new PermissionDeniedException("权限不足，无法执行删除");
         }
         // 2 参数校验
@@ -229,9 +229,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     @Override
     public PageDTO<UserVO> pageQueryUser(int page, int pageSize){
-
         String currentRole = BaseContext.getCurrentRole();
-        if (!"1".equals(currentRole) && !"2".equals(currentRole)) {
+        if (!RoleConstant.COMMON_ADMIN.equals(currentRole) && !RoleConstant.SUPER_ADMIN.equals(currentRole)) {
             throw new PermissionDeniedException("权限不足，无法查找");
         }
         Page<User> pageParam = new Page<>(page, pageSize);
@@ -260,9 +259,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
     @Override
     public void updateUserStatus(Long id, Integer status) {
-
         String currentRole = BaseContext.getCurrentRole();
-        if (!"1".equals(currentRole) && !"2".equals(currentRole)) {
+        if (!RoleConstant.COMMON_ADMIN.equals(currentRole) && !RoleConstant.SUPER_ADMIN.equals(currentRole)) {
             throw new PermissionDeniedException("权限不足，无法查找");
         }
         User user = new User();
