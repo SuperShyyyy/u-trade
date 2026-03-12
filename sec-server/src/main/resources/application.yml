@@ -1,4 +1,10 @@
 spring:
+  data:
+    redis:
+      host: 192.168.150.101
+      port: 6379
+  elasticsearch:
+    uris: http://192.168.150.101:9200
   application:
     name: sec-server
   profiles:
@@ -22,8 +28,9 @@ spring:
       test-on-borrow: false
       test-on-return: false
       filters: stat,wall,slf4j
+
   rabbitmq:
-    connection-timeout: 1s
+    connection-timeout: 3000
     template:
       retry:
         enabled: true # 开启超时重试机制
@@ -35,10 +42,12 @@ spring:
         acknowledge-mode: manual
     publisher-confirm-type: correlated
     publisher-returns: true
-    host: localhost
+    host: 192.168.150.101
     port: 5672
-    username: guest
-    password: guest
+    username: ${spring.rabbitmq.username}
+    password: ${spring.rabbitmq.password}
+    virtual-host: /sec
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -61,3 +70,4 @@ sec:
     user-secret-key: ${JWT_USER_SECRET}
     user-ttl: 7200000
     user-token-name: token
+

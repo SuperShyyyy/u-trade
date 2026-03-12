@@ -40,7 +40,7 @@ public class CategoryController {
     public Result<PageDTO<ItemVO>> pageQueryItemByCategoryId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "1") int pageSize
+            @RequestParam(defaultValue = "10") int pageSize
     ) {
            return Result.success(categoryService.pageQueryItemByCategoryId(id,page,pageSize));
 

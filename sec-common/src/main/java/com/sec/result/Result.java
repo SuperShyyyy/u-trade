@@ -28,4 +28,6 @@ public class Result<T> implements Serializable {
         result.code = 0;
         return result;
     }
+
+
 }

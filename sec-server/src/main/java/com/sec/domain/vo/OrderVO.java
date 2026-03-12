@@ -1,5 +1,6 @@
 package com.sec.domain.vo;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -12,7 +13,7 @@ import lombok.Data;
 
 @Data
 @ApiModel("订单详情VO")
-public class OrderVO {
+public class OrderVO implements Serializable {
 
     @ApiModelProperty("订单ID")
     private Long id;
@@ -28,6 +29,15 @@ public class OrderVO {
 
     @ApiModelProperty("商品ID")
     private Long itemId;
+
+    @ApiModelProperty("商品标题")
+    private String itemTitle;
+
+    @ApiModelProperty("商品描述")
+    private String itemDescription;
+
+    @ApiModelProperty("商品图片")
+    private String itemImage;
 
     @ApiModelProperty("商品单价")
     private BigDecimal price;

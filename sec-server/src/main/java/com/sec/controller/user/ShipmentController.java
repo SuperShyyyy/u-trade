@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-03-08
  */
 @RestController
-@RequestMapping("/shipment")
+@RequestMapping("/user/shipment")
 public class ShipmentController {
 
 }

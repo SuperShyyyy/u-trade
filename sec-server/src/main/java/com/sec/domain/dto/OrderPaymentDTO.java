@@ -1,5 +1,6 @@
 package com.sec.domain.dto;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -8,9 +9,9 @@ import lombok.Data;
 @ApiModel("订单支付请求DTO")
 public class OrderPaymentDTO {
 
-    @ApiModelProperty("订单ID")
-    private Long orderId;
+    @ApiModelProperty("订单号 ")
+    private String orderNo;
 
-    @ApiModelProperty("支付方式: 1-微信, 2-支付宝, 3-余额等")
+    @ApiModelProperty(" BALANCE=0 CARD = 1 WECHAT = 2 ALIPAY = 3;")
     private Integer payType;
 }

@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
  * @since 2026-03-04
  */
 @RestController
-@RequestMapping("/user/wallets")
+@RequestMapping("/user/wallet")
 @RequiredArgsConstructor
 public class UserWalletController {
     private final IUserWalletService userWalletService;

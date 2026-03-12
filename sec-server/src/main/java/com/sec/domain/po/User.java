@@ -22,7 +22,7 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("user")
+@TableName("`user`")
 @ApiModel(value="User对象", description="用户表")
 public class User implements Serializable {
 

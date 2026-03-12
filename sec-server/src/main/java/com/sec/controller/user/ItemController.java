@@ -24,26 +24,35 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/user/item")
 @RequiredArgsConstructor
 public class ItemController {
-    private final IItemService itemsService;
+    private final IItemService itemService;
+
+
+    @GetMapping("/search")
+    public Result<PageDTO<ItemVO>> search(@RequestParam String keyword,
+                                          @RequestParam(defaultValue = "0") int page,
+                                          @RequestParam(defaultValue = "10") int pageSize) {
+        return Result.success(itemService.searchItems(keyword, page, pageSize));
+    }
+
 
     @ApiOperation("用户上架商品接口")
     @PostMapping
     public Result addItem(@RequestBody ItemDTO itemDTO){
-        itemsService.addItem(itemDTO);
+        itemService.addItem(itemDTO);
         return Result.success();
     }
 
     @ApiOperation("用户下架/重新上架商品接口")
     @PutMapping("/{id}/status")
     public Result updateItemStatus(@PathVariable Long id, @RequestParam Integer status){
-        itemsService.updateItemStatus(id,status);
+        itemService.updateItemStatus(id,status);
         return Result.success();
     }
 
     @ApiOperation("用户删除商品接口")
     @DeleteMapping("/{id}")
     public Result deleteItem(@PathVariable Long id){
-        itemsService.deleteItem(id);
+        itemService.deleteItem(id);
         return Result.success();
     }
 
@@ -51,10 +60,10 @@ public class ItemController {
     @GetMapping("/{id}/list")
     public Result<PageDTO<ItemVO>> pageQueryItemsBySellerId(
             @PathVariable Long id,
-            @RequestParam int page,
-            @RequestParam int pageSize
+            @RequestParam(defaultValue = "1")  int page,
+            @RequestParam(defaultValue = "10")  int pageSize
     ){
-        PageDTO<ItemVO> dto = itemsService.pageQueryItemsBySellerId(id, page, pageSize);
+        PageDTO<ItemVO> dto = itemService.pageQueryItemsBySellerId(id, page, pageSize);
         return Result.success(dto);
     }
 }

@@ -13,6 +13,7 @@ import com.sec.domain.vo.OrderPaymentVO;
 import com.sec.domain.vo.OrderSubmitVO;
 import com.sec.domain.vo.OrderVO;
 import com.sec.exception.BusinessException;
+import com.sec.mapper.ItemMapper;
 import com.sec.mapper.OrderMapper;
 import com.sec.mapper.PaymentMapper;
 import com.sec.mapper.ShipmentMapper;
@@ -61,6 +62,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final IItemService itemService;
     private final IUserWalletService userWalletService;
     private final WalletSettlementSender walletSettlementSender;
+    private final ItemMapper itemMapper;
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
@@ -76,7 +78,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .set(Item::getUpdateTime, LocalDateTime.now());
 
         boolean isLocked = itemService.update(updateWrapper);
-
+        Item i = itemService.getById(itemId);
+        BigDecimal itemPrice = i.getPrice();
         if (!isLocked) {
             // 如果更新失败  说明商品不是 ON_SALE 状态
             Item item = itemService.getById(itemId);
@@ -102,9 +105,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .setBuyerId(userId)
                 .setSellerId(dto.getSellerId())
                 .setItemId(itemId)
-                .setQuantity(dto.getQuantity())
-                .setPrice(dto.getPrice())
-                .setTotalPrice(dto.getPrice().multiply(BigDecimal.valueOf(dto.getQuantity())))
+                //.setQuantity(dto.getQuantity())
+                .setPrice(itemPrice) //不可从前端传参
+                //.setTotalPrice(itemPrice.multiply(BigDecimal.valueOf(dto.getQuantity())))
+                .setQuantity(1)
+                .setTotalPrice(itemPrice)
                 .setStatus(OrderStatusConstant.WAIT_PAY)
                 .setCreatedAt(LocalDateTime.now())
                 .setReceiverProvince(address.getProvince())
@@ -128,11 +133,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public OrderPaymentVO payment(OrderPaymentDTO dto) throws Exception {
         Long userId = BaseContext.getCurrentId();
-        Long orderId = dto.getOrderId();
+        String orderNo = dto.getOrderNo();
 
         // 1. 查询订单
         Order order = lambdaQuery()
-                .eq(Order::getId, orderId)
+                .eq(Order::getOrderNo, orderNo)
                 .eq(Order::getBuyerId, userId)
                 .one();
 
@@ -142,7 +147,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order.getStatus() != OrderStatusConstant.WAIT_PAY) {
             //已支付直接返回成功
             if (order.getStatus() == OrderStatusConstant.PAID) {
-                log.info("订单 {} 重复支付请求，直接返回成功", orderId);
+                log.info("订单 {} 重复支付请求，直接返回成功", orderNo);
                 return buildPaymentVO(order, dto);
             }
             throw new BusinessException("订单状态异常，无法支付 (当前状态:" + order.getStatus() + ")");
@@ -154,10 +159,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         );
         // 2. 创建支付记录
         Payment payment = new Payment()
-                .setOrderId(order.getId())
+                .setOrderNo(order.getOrderNo())
                 .setUserId(order.getBuyerId())
                 .setAmount(order.getTotalPrice())
-                .setMethod(dto.getPayType().toString())
+                .setMethod(dto.getPayType())
                 .setStatus(PaymentStatusConstant.SUCCESS)
                 .setPaymentNo(SerialNoUtil.generatePayNo())
                 .setPaidAt(LocalDateTime.now())
@@ -167,7 +172,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 3. 更新订单状态为已支付
         LambdaUpdateWrapper<Order> orderUpdate = new LambdaUpdateWrapper<>();
-        orderUpdate.eq(Order::getId, orderId)
+        orderUpdate.eq(Order::getOrderNo, orderNo)
                 .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
                 .set(Order::getStatus, OrderStatusConstant.PAID)
                 .set(Order::getPaidAt, LocalDateTime.now());
@@ -187,7 +192,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         boolean itemUpdated = itemService.update(itemUpdate);
         if (!itemUpdated) {
-            log.error("支付成功但更新商品状态失败！订单ID: {}, 商品ID: {}", orderId, order.getItemId());
+            log.error("支付成功但更新商品状态失败！订单ID: {}, 商品ID: {}", orderNo, order.getItemId());
             throw new BusinessException("支付成功但商品状态同步失败，请联系客服");
         }
 
@@ -196,7 +201,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return buildPaymentVO(order, dto);
     }
 
-    // 辅助方法：构建支付返回VO
+    // 辅助方法 构建支付返回VO
     private OrderPaymentVO buildPaymentVO(Order order, OrderPaymentDTO dto) {
         OrderPaymentVO vo = new OrderPaymentVO();
         vo.setOrderId(order.getId());
@@ -212,32 +217,31 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public PageDTO<OrderVO> pageQuery4User(int page, int pageSize, Integer status) {
 
         Long userId = BaseContext.getCurrentId();
-
+        //1.缓存Key
         String cacheKey = RedisConstant.ORDER_PAGE_QUERY_BUYER
                 + userId + ":" + page + ":" + pageSize + ":" + (status == null ? "all" : status);
-        // 1. 尝试从 Redis 中获取缓存
+        //2.从Redis中获取缓存
         PageDTO<OrderVO> cachedResult = (PageDTO<OrderVO>) redisTemplate.opsForValue().get(cacheKey);
         if (cachedResult != null) {
-            return cachedResult; // 如果缓存存在，直接返回
+            return cachedResult;
         }
-        // 构建分页参数
+        //3.构建分页参数
         Page<Order> pageParam = new Page<>(page, pageSize);
-
-        // 构建查询条件
+        //4.构建查询条件
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Order::getBuyerId, userId);
 
         if (status != null) {
             queryWrapper.eq(Order::getStatus, status);
         }
-
+        //按创建时间倒序
         queryWrapper.orderByDesc(Order::getCreatedAt);
 
-        //  执行分页查询
+        //5.执行分页查询
         IPage<Order> orderIPage = orderMapper.selectPage(pageParam, queryWrapper);
         List<Order> records = orderIPage.getRecords();
 
-        // 如果没有数据，返回空 PageDTO，但分页信息正确
+        //6.处理无数据情况
         if (records.isEmpty()) {
             PageDTO<OrderVO> emptyResult = new PageDTO<>(
                     orderIPage.getTotal(),
@@ -249,20 +253,35 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return emptyResult;
         }
 
-        // 批量查询 shipment 表
+        //7.准备关联数据所需的 ID 集合
         List<Long> orderIds = records.stream().map(Order::getId).collect(Collectors.toList());
-        List<Shipment> shipments = shipmentMapper.selectList(
-                new LambdaQueryWrapper<Shipment>().in(Shipment::getOrderId, orderIds)
-        );
-        Map<Long, Shipment> shipmentMap = shipments.stream()
+        List<Long> itemIds = records.stream()
+                .map(Order::getItemId)
+                .filter(Objects::nonNull) // 防止 itemId 为空
+                .distinct() // 去重，减少查询量
+                .collect(Collectors.toList());
+
+        //8.批量查询shipment表
+        Map<Long, Shipment> shipmentMap = orderIds.isEmpty()
+                ? new HashMap<>()
+                : shipmentMapper.selectList(new LambdaQueryWrapper<Shipment>().in(Shipment::getOrderId, orderIds))
+                .stream()
+                .filter(Objects::nonNull)
                 .collect(Collectors.toMap(Shipment::getOrderId, s -> s, (s1, s2) -> s1));
 
-        // 组装 VO 列表
+        //9.批量查询 item 表
+        Map<Long, Item> itemMap = itemIds.isEmpty()
+                ? new HashMap<>()
+                : itemMapper.selectList(new LambdaQueryWrapper<Item>().in(Item::getId, itemIds))
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Item::getId, item -> item, (v1, v2) -> v1));
+        //10.组装VO列表
         List<OrderVO> voList = records.stream().map(order -> {
             OrderVO vo = new OrderVO();
             BeanUtils.copyProperties(order, vo);
 
-            // 填充物流和收货信息
+            //物流信息
             Shipment shipment = shipmentMap.get(order.getId());
             if (shipment != null) {
                 vo.setShipmentCompany(shipment.getCompany());
@@ -276,17 +295,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 vo.setReceiverDistrict(shipment.getReceiverDistrict());
                 vo.setReceiverAddress(shipment.getReceiverAddress());
             }
+
+            //商品信息 从内存Map获取
+            Long currentItemId = order.getItemId();
+            if (currentItemId != null && itemMap.containsKey(currentItemId)) {
+                Item item = itemMap.get(currentItemId);
+                vo.setItemTitle(item.getTitle());
+                vo.setItemDescription(item.getDescription());
+                vo.setItemImage(item.getImages());
+            }
             return vo;
         }).collect(Collectors.toList());
 
-        // 缓存查询结果到 Redis
+        //构建最终结果 缓存&返回
         PageDTO<OrderVO> result = new PageDTO<>(
                 orderIPage.getTotal(),
                 orderIPage.getPages(),
                 orderIPage.getCurrent(),
                 voList
         );
-        long ttl = 10 + ThreadLocalRandom.current().nextInt(10);
+
+        //12.缓存 添加随机过期时间 防止缓存雪崩
+        long ttl = 10 + ThreadLocalRandom.current().nextInt(10); //10-20min
         redisTemplate.opsForValue().set(cacheKey, result, ttl, TimeUnit.MINUTES);
         return result;
     }
@@ -487,6 +517,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .update();
     }
 
+    @Override
+    public void shipment(Long id, String logisticsCompany, String trackingNumber) {
+        Long userId = BaseContext.getCurrentId();
+        //todo
+    }
+
 
     private void clearOrderCache(Order order) {
 
@@ -516,4 +552,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             log.debug("清除订单缓存: {}", keys);
         }
     }
+
+
 }

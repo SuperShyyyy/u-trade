@@ -8,3 +8,7 @@ sec:
   jwt:
     admin-secret-key: sec_trade_admin_secret_key_fixed_123456
     user-secret-key: sec_trade_user_secret_key_fixed_654321
+spring:
+  rabbitmq:
+    username: tjxt
+    password: 123321

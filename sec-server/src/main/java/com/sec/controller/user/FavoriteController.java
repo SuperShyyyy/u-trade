@@ -39,16 +39,16 @@ public class FavoriteController {
     }
 
     @ApiOperation("收藏商品")
-    @PostMapping
-    public Result addFavorite(FavoriteDTO favoriteDTO) {
-        favoriteService.addFavorite(favoriteDTO);
+    @PostMapping("/add")
+    public Result addFavorite(@RequestParam("itemId") Long itemId) {
+        favoriteService.addFavorite(itemId);
         return Result.success();
     }
 
     @ApiOperation("删除收藏")
-    @DeleteMapping
-    public Result deleteFavorite(@PathVariable  Long id) {
-        favoriteService.deleteFavorite(id);
+    @DeleteMapping("{itemId}")
+    public Result deleteFavorite(@PathVariable Long itemId) {
+        favoriteService.deleteFavorite(itemId);
         return Result.success();
     }
 }

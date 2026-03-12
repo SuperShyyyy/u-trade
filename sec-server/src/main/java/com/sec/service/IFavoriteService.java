@@ -16,7 +16,7 @@ import com.sec.result.PageDTO;
  */
 public interface IFavoriteService extends IService<Favorite> {
 
-    void addFavorite(FavoriteDTO favoriteDTO);
+    void addFavorite(Long itemId);
 
     PageDTO<FavoriteVO> pageQueryFavorite(int page, int pageSize);
 

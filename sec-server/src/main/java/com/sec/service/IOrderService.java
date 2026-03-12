@@ -56,4 +56,6 @@ public interface IOrderService extends IService<Order> {
     void autoConfirm();
 
     void autoCancelTimeoutOrders();
+
+    void shipment(Long id, String logisticsCompany, String trackingNumber);
 }

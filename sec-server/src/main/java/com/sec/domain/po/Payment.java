@@ -34,7 +34,7 @@ public class Payment implements Serializable {
     private Long id;
 
     @ApiModelProperty(value = "关联订单ID")
-    private Long orderId;
+    private String orderNo;
 
     @ApiModelProperty(value = "支付流水号")
     private String paymentNo;
@@ -45,8 +45,8 @@ public class Payment implements Serializable {
     @ApiModelProperty(value = "支付金额")
     private BigDecimal amount;
 
-    @ApiModelProperty(value = "支付方式（wechat/alipay/balance等）")
-    private String method;
+    @ApiModelProperty(value = " BALANCE = 0" + "CARD = 1;" +" WECHAT = 2 " + " ALIPAY = 3; ")
+    private Integer method;
 
     @ApiModelProperty(value = "支付状态: 0-未支付, 1-成功, 2-失败")
     private Integer status;

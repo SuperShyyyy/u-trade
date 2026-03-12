@@ -3,6 +3,7 @@ package com.sec.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sec.constant.RedisConstant;
@@ -48,11 +49,11 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
 
     @Transactional
     @Override
-    public void addFavorite(FavoriteDTO favoriteDTO) {
+    public void addFavorite(Long itemId) {
         Long userId = BaseContext.getCurrentId();
         Favorite favorite = new Favorite();
         favorite.setUserId(userId);
-        favorite.setItemId(favoriteDTO.getItemId());
+        favorite.setItemId(itemId);
         favorite.setCreateTime(LocalDateTime.now());
         try {
             this.save(favorite);
@@ -60,7 +61,6 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
             // 捕获唯一索引冲突
             throw new BusinessException("该商品已收藏");
         }
-        // ===== 修改点 1：Redis 删除缓存支持通配符 =====
         Set<String> keys = stringRedisTemplate.keys(RedisConstant.USER_FAVORITE_KEY + userId + ":*");
         if (keys != null && !keys.isEmpty()) {
             stringRedisTemplate.delete(keys);
@@ -89,6 +89,22 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
         ).orderByDesc(Favorite::getCreateTime);
 
         IPage<Favorite> favoritePage = favoriteMapper.selectPage(pageParam, queryWrapper);
+
+        List<Favorite> records = favoritePage.getRecords();
+
+        if (records.isEmpty()) {
+            PageDTO<FavoriteVO> emptyPage =
+                    PageDTO.of(favoritePage.convert(f -> new FavoriteVO()));
+
+            stringRedisTemplate.opsForValue().set(
+                    cacheKey,
+                    JSON.toJSONString(emptyPage),
+                    Duration.ofMinutes(30)
+            );
+
+            return emptyPage;
+        }
+
         List<Long> itemIds = favoritePage.getRecords().stream().map(Favorite::getItemId).toList();
         List<Item> items = itemMapper.selectBatchIds(itemIds);
         Map<Long,Item> itemMap = items.stream().collect(Collectors.toMap(Item::getId, i-> i));
@@ -114,16 +130,19 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
     }
     @Transactional
     @Override
-    public void deleteFavorite(Long id) {
+    public void deleteFavorite(Long itemId) {
         Long userId = BaseContext.getCurrentId();
-        Favorite favorite = lambdaQuery()
+
+        boolean rows = lambdaUpdate()
                 .eq(Favorite::getUserId, userId)
-                .eq(Favorite::getId, id)
-                .one();
-        if (favorite == null) {
+                .eq(Favorite::getItemId, itemId)
+                .remove();
+
+        if (!rows) {
             throw new BusinessException("收藏的商品不存在");
         }
-        this.removeById(id);
+
+        // 删除 Redis 缓存
         Set<String> keys = stringRedisTemplate.keys(RedisConstant.USER_FAVORITE_KEY + userId + ":*");
         if (keys != null && !keys.isEmpty()) {
             stringRedisTemplate.delete(keys);

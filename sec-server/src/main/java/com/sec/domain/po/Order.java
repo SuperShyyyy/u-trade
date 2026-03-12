@@ -26,7 +26,7 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("order")
+@TableName("`order`")
 @ApiModel(value="Order对象", description="订单表")
 public class Order implements Serializable {
 
@@ -36,6 +36,7 @@ public class Order implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    @TableField("order_no")
     @ApiModelProperty(value = "订单号")
     private String orderNo;
 
@@ -100,5 +101,5 @@ public class Order implements Serializable {
     private LocalDateTime shippedAt;
 
     @ApiModelProperty("退款原因 0 超时未支付 1 用户取消 2 商家原因")
-    private LocalDateTime cancelReason;
+    private String cancelReason;
 }

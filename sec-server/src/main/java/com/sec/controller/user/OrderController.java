@@ -38,7 +38,7 @@ public class OrderController {
         return Result.success(orderSubmitVO);
     }
 
-    @PostMapping
+    @PostMapping("/payment")
     @ApiOperation("订单支付")
     public Result<OrderPaymentVO> payment(@RequestBody OrderPaymentDTO orderPaymentDTO) throws Exception {
         log.info("订单支付：{}", orderPaymentDTO);
@@ -70,6 +70,15 @@ public class OrderController {
     @ApiOperation("取消订单")
     public Result cancel(@PathVariable("id") Long id) throws Exception {
         orderService.userCancelById(id);
+        return Result.success();
+    }
+    @ApiOperation("订单发货")
+    @PutMapping("shipment/{id}")
+    public Result shipment(
+            @PathVariable("id") Long id,
+            @RequestParam(required = false) String logisticsCompany,
+            @RequestParam(required = false) String trackingNumber) {
+        orderService.shipment(id, logisticsCompany, trackingNumber);
         return Result.success();
     }
 
