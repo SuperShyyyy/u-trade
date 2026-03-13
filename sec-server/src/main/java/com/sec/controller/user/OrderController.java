@@ -6,6 +6,7 @@ import com.sec.domain.dto.OrderSubmitDTO;
 import com.sec.domain.vo.OrderPaymentVO;
 import com.sec.domain.vo.OrderSubmitVO;
 import com.sec.domain.vo.OrderVO;
+import com.sec.domain.vo.ShipmentVO;
 import com.sec.result.PageDTO;
 import com.sec.result.Result;
 import com.sec.service.IOrderService;
@@ -66,29 +67,35 @@ public class OrderController {
         return Result.success(orderVO);
     }
 
-    @PutMapping("/cancel/{id}")
+    @PutMapping("/cancel")
     @ApiOperation("取消订单")
-    public Result cancel(@PathVariable("id") Long id) throws Exception {
+    public Result cancel(@RequestParam("id") Long id) throws Exception {
         orderService.userCancelById(id);
         return Result.success();
     }
     @ApiOperation("订单发货")
-    @PutMapping("shipment/{id}")
+    @PutMapping("shipment")
     public Result shipment(
-            @PathVariable("id") Long id,
+            @RequestParam("orderId") Long orderId,
             @RequestParam(required = false) String logisticsCompany,
             @RequestParam(required = false) String trackingNumber) {
-        orderService.shipment(id, logisticsCompany, trackingNumber);
+        orderService.shipment(orderId, logisticsCompany, trackingNumber);
         return Result.success();
     }
 
 
 
-    @PostMapping("/confirm/{id}")
     @ApiOperation("买家确认收货")
-    public Result confirm(@PathVariable("id") Long id) {
+    @PostMapping("/confirm")
+    public Result confirm(@RequestParam("id") Long id) {
         orderService.confirm(id);
         return Result.success();
+    }
+
+    @ApiOperation("根据物流号查询物流信息")
+    @GetMapping
+    public Result<ShipmentVO> queryShipmentByOrderId(Long orderId){
+        return Result.success(orderService.queryShipmentByOrderId(orderId));
     }
 
 

@@ -35,6 +35,9 @@ public class Shipment implements Serializable {
     @ApiModelProperty(value = "关联订单ID")
     private Long orderId;
 
+    @ApiModelProperty(value = "关联卖家id")
+    private Long sellerId;
+
     @ApiModelProperty(value = "物流公司名称 (如: 顺丰, 邮政, 或者是 '线下自提')")
     private String company;
 
@@ -65,7 +68,7 @@ public class Shipment implements Serializable {
     @ApiModelProperty(value = "发货时间")
     private LocalDateTime shippedAt;
 
-    @ApiModelProperty(value = "妥投/签收时间")
+    @ApiModelProperty(value = "签收时间")
     private LocalDateTime deliveredAt;
 
     @ApiModelProperty(value = "记录创建时间")

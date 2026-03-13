@@ -73,6 +73,7 @@ public class Order implements Serializable {
     @ApiModelProperty(value = "取消时间")
     private LocalDateTime cancelledAt;
 
+    //地址
     private String receiverName;
     private String receiverPhone;
     private String receiverProvince;
@@ -81,7 +82,17 @@ public class Order implements Serializable {
     private String receiverAddress;
 
 
+    //物流
+   /* private Integer isFreeShipping;  //是否包邮
+   */
     private BigDecimal shippingFee;
+
+    //关联物流号
+    private Long shipmentId;
+
+  /*  private String logisticsCompany; //物流公司
+    private String trackingNumber;   //单号
+*/
     private String paymentMethod;
 
     /**

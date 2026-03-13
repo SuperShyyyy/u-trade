@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.sec.domain.vo.OrderPaymentVO;
 import com.sec.domain.vo.OrderSubmitVO;
 import com.sec.domain.vo.OrderVO;
+import com.sec.domain.vo.ShipmentVO;
 import com.sec.result.PageDTO;
+import com.sec.result.Result;
 
 /**
  * <p>
@@ -57,5 +59,7 @@ public interface IOrderService extends IService<Order> {
 
     void autoCancelTimeoutOrders();
 
-    void shipment(Long id, String logisticsCompany, String trackingNumber);
+    void shipment(Long orderId, String logisticsCompany, String trackingNumber);
+
+    ShipmentVO queryShipmentByOrderId(Long orderId);
 }

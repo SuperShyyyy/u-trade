@@ -54,6 +54,9 @@ public class OrderVO implements Serializable {
     @ApiModelProperty(value = "商品快照，保存下单时商品信息")
     private ItemSnapshotDTO itemSnapshot;
 
+    @ApiModelProperty(value = "物流号 关联shipmen表")
+    private Long shipmenId;
+
     @ApiModelProperty("收货人姓名")
     private String receiverName;
 

@@ -12,6 +12,7 @@ import com.sec.domain.po.*;
 import com.sec.domain.vo.OrderPaymentVO;
 import com.sec.domain.vo.OrderSubmitVO;
 import com.sec.domain.vo.OrderVO;
+import com.sec.domain.vo.ShipmentVO;
 import com.sec.exception.BusinessException;
 import com.sec.mapper.ItemMapper;
 import com.sec.mapper.OrderMapper;
@@ -20,12 +21,14 @@ import com.sec.mapper.ShipmentMapper;
 import com.sec.message.WalletSettlementMessage;
 import com.sec.mq.sender.WalletSettlementSender;
 import com.sec.result.PageDTO;
+import com.sec.result.Result;
 import com.sec.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.support.BeanDefinitionDsl;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -63,29 +66,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final IUserWalletService userWalletService;
     private final WalletSettlementSender walletSettlementSender;
     private final ItemMapper itemMapper;
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
         Long userId = BaseContext.getCurrentId();
         Long itemId = dto.getItemId();
 
-        //1.尝试锁定商品
+        //1.乐观锁锁定商品
         //状态为 ON_SALE的商品才能改为LOCKED
         LambdaUpdateWrapper<Item> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Item::getId, itemId)
                 .eq(Item::getStatus, ItemStatusConstant.ON_SALE) // 核心：检查旧状态
                 .set(Item::getStatus, ItemStatusConstant.LOCKED)
                 .set(Item::getUpdateTime, LocalDateTime.now());
-
         boolean isLocked = itemService.update(updateWrapper);
-        Item i = itemService.getById(itemId);
-        BigDecimal itemPrice = i.getPrice();
+        Item item = itemService.getById(itemId);
         if (!isLocked) {
             // 如果更新失败  说明商品不是 ON_SALE 状态
-            Item item = itemService.getById(itemId);
             if (item == null) {
                 throw new BusinessException("商品不存在");
             }
+
             if (item.getStatus().equals(ItemStatusConstant.SOLD)) {
                 throw new BusinessException("宝贝已售出，手慢无！");
             } else if (item.getStatus().equals(ItemStatusConstant.LOCKED)) {
@@ -94,7 +96,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 throw new BusinessException("商品状态异常，无法购买");
             }
         }
-        // 2.查询地址
+        //2.获取价格和运费
+        BigDecimal itemPrice = item.getPrice();
+        BigDecimal shippingFee = null;
+        if(item.getIsFreeShipping()==0){
+            shippingFee = item.getShippingFee();
+        }
+        //3.查询地址
         UserAddress address = userAddressService.getById(dto.getAddressId());
         if (address == null) {
             throw new BusinessException("收货地址不存在");
@@ -105,19 +113,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .setBuyerId(userId)
                 .setSellerId(dto.getSellerId())
                 .setItemId(itemId)
-                //.setQuantity(dto.getQuantity())
-                .setPrice(itemPrice) //不可从前端传参
-                //.setTotalPrice(itemPrice.multiply(BigDecimal.valueOf(dto.getQuantity())))
+                // 单价 数量 运费 总价
+                .setPrice(itemPrice)
                 .setQuantity(1)
-                .setTotalPrice(itemPrice)
+                .setShippingFee(shippingFee)
+                .setTotalPrice(itemPrice.add(shippingFee))//总价 = 运费 + 商品价格
+                //状态更新
                 .setStatus(OrderStatusConstant.WAIT_PAY)
+                //创建时间
                 .setCreatedAt(LocalDateTime.now())
+                //物流
                 .setReceiverProvince(address.getProvince())
                 .setReceiverCity(address.getCity())
                 .setReceiverDistrict(address.getDistrict())
                 .setReceiverAddress(address.getDetailAddress())
                 .setReceiverPhone(address.getReceiverPhone())
                 .setReceiverName(address.getReceiverName())
+                //生成唯一订单号
                 .setOrderNo(SerialNoUtil.generateOrderNo());
 
         orderMapper.insert(order);
@@ -215,7 +227,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Override
     public PageDTO<OrderVO> pageQuery4User(int page, int pageSize, Integer status) {
-
         Long userId = BaseContext.getCurrentId();
         //1.缓存Key
         String cacheKey = RedisConstant.ORDER_PAGE_QUERY_BUYER
@@ -517,12 +528,88 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .update();
     }
 
+    @Transactional
     @Override
-    public void shipment(Long id, String logisticsCompany, String trackingNumber) {
-        Long userId = BaseContext.getCurrentId();
-        //todo
+    public void shipment(Long orderId, String logisticsCompany, String trackingNumber) {
+        Long sellerId  = BaseContext.getCurrentId();
+        Order updateOrder = new Order();
+        updateOrder.setId(orderId);
+        updateOrder.setStatus(OrderStatusConstant.SHIPPED);
+        // order 不包含物流信息 在物流表关联orderId
+        //updateOrder.setLogisticsCompany(logisticsCompany); // 保存物流公司
+        //updateOrder.setTrackingNumber(trackingNumber);     //  保存物流单号
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Order::getId, orderId)
+                .eq(Order::getSellerId, sellerId) // 权限校验放在 SQL 中
+                // 关键：确保只有未发货的订单才能被更新，防止并发和状态错乱
+                // 允许发货的状态是：已支付
+                .in(Order::getStatus, OrderStatusConstant.PAID, OrderStatusConstant.SHIPPED);
+        int success = orderMapper.update(updateOrder, updateWrapper);
+        if (success == 0) {
+            // 更新失败，说明要么 ID 不存在，要么卖家不对，要么状态不对（已被别人发货或取消）
+            // 需要查询具体原因返回给用户，或者直接抛通用异常
+            Order dbOrder = orderMapper.selectById(orderId);
+            if (dbOrder == null || !dbOrder.getSellerId().equals(sellerId)) {
+                throw new BusinessException("订单不存在或无权操作");
+            } else {
+                throw new BusinessException("订单状态已变更，无法重复发货（当前状态：" + dbOrder.getStatus() + "）");
+            }
+        }
+        //新增物流信息
+        Shipment shipment = new Shipment();
+        shipment.setOrderId(orderId);
+        shipment.setSellerId(sellerId);
+        shipment.setStatus(OrderStatusConstant.SHIPPED);
+        shipment.setCreatedAt(LocalDateTime.now());
+        shipment.setCompany(logisticsCompany);
+        shipment.setTrackingNo(trackingNumber);
+        int insertSuccess = shipmentMapper.insert(shipment);
+        if (insertSuccess == 0) {
+            throw new BusinessException("物流信息保存失败");
+        }
     }
 
+    @Override
+    public ShipmentVO queryShipmentByOrderId(Long orderId) {
+        Long userId = BaseContext.getCurrentId();
+
+        // 1. 正确的查询方式：通过 orderId 关联查询，而不是 selectById
+        LambdaQueryWrapper<Shipment> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Shipment::getOrderId, orderId);
+        Shipment shipment = shipmentMapper.selectOne(queryWrapper);
+
+        if (shipment == null) {
+            // 情况A：还没发货，自然没有物流信息。
+            // 根据业务需求，是抛异常还是返回空对象？
+            // 如果是“查询物流”接口，通常意味着用户认为已发货。
+            // 建议先查订单状态确认是否已发货
+            Order order = orderMapper.selectById(orderId);
+            if (order != null && OrderStatusConstant.SHIPPED.equals(order.getStatus())) {
+                throw new BusinessException("物流信息同步延迟，请稍后重试");
+            }
+            throw new BusinessException("该订单尚未发货，无物流信息");
+        }
+
+        // 2. 权限校验 买家和卖家都能看
+        // 获取订单信息以校验买家身份
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+
+        boolean isSeller = shipment.getSellerId().equals(userId);
+        boolean isBuyer = order.getBuyerId().equals(userId);
+
+        if (!isSeller && !isBuyer) {
+            throw new BusinessException("无权查看该订单的物流信息");
+        }
+        // 4. 转换 VO
+        ShipmentVO shipmentVO = new ShipmentVO();
+        BeanUtils.copyProperties(shipment, shipmentVO);
+
+
+        return shipmentVO;
+    }
 
     private void clearOrderCache(Order order) {
 

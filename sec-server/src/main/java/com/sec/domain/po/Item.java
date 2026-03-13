@@ -69,5 +69,8 @@ public class Item implements Serializable {
 
     private LocalDateTime updateTime;
 
+    private Integer isFreeShipping;  //是否包邮 0不包邮 1包邮
+
+    private BigDecimal shippingFee; //不包邮 邮费
 
 }
