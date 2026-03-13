@@ -376,7 +376,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setStatus(OrderStatusConstant.CANCELLED)
                 .setCancelledAt(LocalDateTime.now());
         this.updateById(order);
-
         LambdaUpdateWrapper<Item> itemUpdate = new LambdaUpdateWrapper<>();
         itemUpdate.eq(Item::getId, order.getItemId())
                 .eq(Item::getStatus, ItemStatusConstant.LOCKED) // 确保当前是锁定状态
@@ -408,15 +407,26 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("状态异常");
         }
 
+        //获取乐观锁版本
+        Integer currentVersion = order.getVersion();
+        if (currentVersion == null) {
+            currentVersion = 0;
+        }
+        //更新
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Order::getId, order.getId())
+                // 1.判断版本号 避免高并发问题
+                .eq(Order::getVersion, currentVersion)
+                // 2. 更新状态
+                .set(Order::getStatus, OrderStatusConstant.FINISHED)
+                .set(Order::getCompletedAt, LocalDateTime.now())
+                // 3. 手动更改版本号 +1
+                .setSql("version = version + 1");
 
-        // 2 更新订单状态
-        order.setStatus(OrderStatusConstant.FINISHED); // 已完成
-        order.setCompletedAt(LocalDateTime.now());
-
-        int count = this.baseMapper.updateById(order);
-        if (count == 0) {
+        if (!this.update(updateWrapper)) {
             throw new BusinessException("操作失败，订单状态已变更，请刷新后重试");
         }
+
 
         // 3. 同步更新物流信息
         LambdaUpdateWrapper<Shipment> shipmentWrapper = new LambdaUpdateWrapper<>();

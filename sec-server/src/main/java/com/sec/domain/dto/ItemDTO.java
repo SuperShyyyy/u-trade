@@ -15,5 +15,6 @@ public class ItemDTO {
     private Long categoryId;
     private BigDecimal originalPrice;
     private String[] images;
-
+    private Integer is_free_shipping;
+    private BigDecimal shippingFee;
 }

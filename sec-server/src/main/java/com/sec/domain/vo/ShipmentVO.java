@@ -1,9 +1,15 @@
 package com.sec.domain.vo;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Data
+@Getter
+@Setter
 public class ShipmentVO {
 
     private Long orderId;

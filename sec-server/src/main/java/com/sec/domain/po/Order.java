@@ -104,8 +104,9 @@ public class Order implements Serializable {
     private ItemSnapshotDTO itemSnapshot;
 
     private LocalDateTime updatedAt;
-
-    @Version // MyBatis-Plus 自动处理版本号
+/*
+    @TableField("version")
+    @Version // MyBatis-Plus 自动处理版本号*/
     private Integer version;
 
     @ApiModelProperty("发货时间")
