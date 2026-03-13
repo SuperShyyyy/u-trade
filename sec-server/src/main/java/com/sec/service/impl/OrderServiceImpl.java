@@ -74,28 +74,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         Long itemId = dto.getItemId();
 
         //1.乐观锁锁定商品
-        //状态为 ON_SALE的商品才能改为LOCKED
+        // 只有状态为 ON_SALE的商品才能改为LOCKED
         LambdaUpdateWrapper<Item> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Item::getId, itemId)
                 .eq(Item::getStatus, ItemStatusConstant.ON_SALE) // 核心：检查旧状态
                 .set(Item::getStatus, ItemStatusConstant.LOCKED)
                 .set(Item::getUpdateTime, LocalDateTime.now());
         boolean isLocked = itemService.update(updateWrapper);
-        Item item = itemService.getById(itemId);
         if (!isLocked) {
-            // 如果更新失败  说明商品不是 ON_SALE 状态
-            if (item == null) {
-                throw new BusinessException("商品不存在");
-            }
-
-            if (item.getStatus().equals(ItemStatusConstant.SOLD)) {
-                throw new BusinessException("宝贝已售出，手慢无！");
-            } else if (item.getStatus().equals(ItemStatusConstant.LOCKED)) {
-                throw new BusinessException("商品正在被他人购买中，请稍后重试");
-            } else {
-                throw new BusinessException("商品状态异常，无法购买");
-            }
+            log.warn("商品锁定失败，ID: {}", itemId);
+            throw new BusinessException("宝贝已售出或正在被他人购买中，请稍后重试");
         }
+        Item item = itemService.getById(itemId);
         //2.获取价格和运费
         BigDecimal itemPrice = item.getPrice();
         BigDecimal shippingFee = null;
@@ -417,12 +407,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order.getStatus() == null) {
             throw new BusinessException("状态异常");
         }
-        // 2. 状态校验：只有已发货(2)才能确认收货
-        if (order.getStatus() != OrderStatusConstant.SHIPPED) {
-            throw new BusinessException("订单未发货，无法确认收货！");
-        }
 
-        // 3. 更新订单状态 (updateById 会自动触发 @Version 检查)
+
+        // 2 更新订单状态
         order.setStatus(OrderStatusConstant.FINISHED); // 已完成
         order.setCompletedAt(LocalDateTime.now());
 
@@ -431,7 +418,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("操作失败，订单状态已变更，请刷新后重试");
         }
 
-        // 4. 同步更新物流信息
+        // 3. 同步更新物流信息
         LambdaUpdateWrapper<Shipment> shipmentWrapper = new LambdaUpdateWrapper<>();
         shipmentWrapper.eq(Shipment::getOrderId, orderId)
                 .eq(Shipment::getStatus, OrderStatusConstant.SHIPPED) // 仅当物流为已发货时允许改为已签收
@@ -443,10 +430,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!shipmentUpdated) {
             log.warn("订单 {} 已确认收货，但同步物流表状态失败，可能状态不一致", orderId);
         }
-        // 5. 更新缓存
+        // 4. 更新缓存
         clearOrderCache(order);
 
-        // 6. 资金结算 调用 WalletService
+        // 5. 资金结算 调用 WalletService
         userWalletService.transferFrozenToSeller(
                 order.getBuyerId(),
                 order.getSellerId(),
@@ -456,47 +443,52 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void autoConfirm() {
-        //查询发货7天的订单
         List<Order> orders = lambdaQuery()
                 .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
                 .lt(Order::getUpdatedAt, LocalDateTime.now().minusDays(7))
                 .last("limit 50")
                 .list();
-        if (orders.isEmpty()) {
-            return;
-        }
+
+        if (orders.isEmpty()) return;
+
         LocalDateTime now = LocalDateTime.now();
-        List<Long> orderIds = orders.stream()
-                .map(Order::getId)
-                .toList();
-        // 批量更新订单
-        lambdaUpdate()
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+
+        // 1. 批量更新订单 (带上状态校验)
+        boolean orderSuccess = lambdaUpdate()
                 .in(Order::getId, orderIds)
+                .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
                 .set(Order::getStatus, OrderStatusConstant.FINISHED)
                 .set(Order::getCompletedAt, now)
                 .update();
-        // 批量更新物流
+
+        // 2. 批量更新物流
         shipmentService.lambdaUpdate()
                 .in(Shipment::getOrderId, orderIds)
+                .eq(Shipment::getStatus, OrderStatusConstant.SHIPPED)
                 .set(Shipment::getStatus, ShipmentStatusConstant.FINISHED)
                 .set(Shipment::getDeliveredAt, now)
                 .update();
 
-        // 只删除状态实际变更的订单缓存
-        orders.forEach(order -> clearOrderCache(order));
-        //4. 结算 使用异步或消息队列，避免在定时任务里阻塞结算
+        // 3. 清理缓存 & 发送结算消息
+        // 建议：将发送消息放在循环内，如果发送失败，记录日志，后续通过对账任务补偿
         for (Order order : orders) {
-            WalletSettlementMessage msg = new WalletSettlementMessage(
-                    order.getBuyerId(),
-                    order.getSellerId(),
-                    order.getTotalPrice(),
-                    order.getOrderNo()
-            );
-            walletSettlementSender.send(msg);
+            clearOrderCache(order);
+            try {
+                WalletSettlementMessage msg = new WalletSettlementMessage(
+                        order.getBuyerId(),
+                        order.getSellerId(),
+                        order.getTotalPrice(),
+                        order.getOrderNo()
+                );
+                walletSettlementSender.send(msg);
+            } catch (Exception e) {
+                log.error("订单 {} 自动确认收货后，发送结算消息失败", order.getId(), e);
+                // 这里最好记录到一张"待结算补偿表"中，由另一个定时任务扫描重试
+            }
         }
-
     }
 
     // 添加定时任务
@@ -520,13 +512,56 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return;
         }
 
-        lambdaUpdate()
+        boolean success = lambdaUpdate()
                 .in(Order::getId, ids)
+                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY) // 核心：双重检查
                 .set(Order::getStatus, OrderStatusConstant.CANCELLED)
                 .set(Order::getCancelledAt, LocalDateTime.now())
                 .set(Order::getCancelReason, "超时未支付自动取消")
                 .update();
+        // 3. 根据 boolean 结果判断是否继续后续逻辑
+        if (!success) {
+            log.info("自动取消订单任务执行完毕，但没有订单状态发生变更（可能已被支付或并发处理）");
+            return;
+        }
+
+        log.info("自动取消订单成功，开始释放商品库存...");
+
+        // 4. 释放被锁定的商品状态
+        // 因为 updateSuccess 为 true，说明至少有部分订单被取消了，需要释放对应的商品
+        // 为了精准，最好再次查询这些 ID 中实际被更新的订单对应的 itemId
+        // 简单做法：直接尝试释放这些 itemId 带上 LOCKED 条件保证安全
+
+        List<Order> cancelledOrders = lambdaQuery()
+                .in(Order::getId, ids)
+                .eq(Order::getStatus, OrderStatusConstant.CANCELLED) // 只查刚刚被成功的
+                .select(Order::getItemId)
+                .list();
+
+        if (!cancelledOrders.isEmpty()) {
+            List<Long> itemIds = cancelledOrders.stream()
+                    .map(Order::getItemId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+
+            // 批量释放商品：只有状态是 LOCKED 的才改为 ON_SALE
+            boolean itemReleaseSuccess = itemService.lambdaUpdate()
+                    .in(Item::getId, itemIds)
+                    .eq(Item::getStatus, ItemStatusConstant.LOCKED)
+                    .set(Item::getStatus, ItemStatusConstant.ON_SALE)
+                    .set(Item::getUpdateTime, LocalDateTime.now())
+                    .update();
+
+            if (!itemReleaseSuccess) {
+                log.warn("部分商品状态释放失败，可能需要人工介入检查。涉及商品ID: {}", itemIds);
+            } else {
+                log.info("成功释放 {} 个商品库存", itemIds.size());
+            }
+        }
+
     }
+
 
     @Transactional
     @Override
