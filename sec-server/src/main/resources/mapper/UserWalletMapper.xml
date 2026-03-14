@@ -2,4 +2,64 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sec.mapper.UserWalletMapper">
 
+    <!-- 这个没问题 -->
+    <update id="updateBuyerWallet">
+        UPDATE user_wallet
+        SET frozen_amount = #{frozenAmount},
+            total_expense = #{totalExpense},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+    <!-- 这个没问题 -->
+    <update id="updateSellerWallet">
+        UPDATE user_wallet
+        SET balance = #{balance},
+            total_income = #{totalIncome},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+    <!-- ✅ 修正了参数名：balance -> after, totalIncome -> income -->
+    <update id="updateRechargeWallet">
+        UPDATE user_wallet
+        SET balance = #{after},
+            total_income = #{income},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+    <!-- ✅ 修正了参数名：balance -> balanceAfter, frozenAmount -> frozenAfter -->
+    <update id="updateFreezeWallet">
+        UPDATE user_wallet
+        SET balance = #{balanceAfter},
+            frozen_amount = #{frozenAfter},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+    <!-- ✅ 修正了参数名：balance -> balanceAfter, frozenAmount -> frozenAfter -->
+    <update id="updateUnfreezeWallet">
+        UPDATE user_wallet
+        SET balance = #{balanceAfter},
+            frozen_amount = #{frozenAfter},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+    <!-- 这个没问题 -->
+    <update id="updateWithdrawWallet">
+        UPDATE user_wallet
+        SET balance = #{balance},
+            total_expense = #{totalExpense},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
 </mapper>

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.injector.methods.SelectOne;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sec.constant.WalletBizTypeConstant;
 import com.sec.context.BaseContext;
 import com.sec.domain.dto.WalletLogQueryDTO;
 import com.sec.domain.dto.WalletRechargeDTO;
@@ -58,7 +59,8 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
                     .setBalance(BigDecimal.ZERO)
                     .setFrozenAmount(BigDecimal.ZERO)
                     .setTotalIncome(BigDecimal.ZERO)
-                    .setTotalExpense(BigDecimal.ZERO);
+                    .setTotalExpense(BigDecimal.ZERO)
+                    .setVersion(0); // 初始化 version
             this.save(wallet);
         }
         UserWalletVO walletVO = new UserWalletVO();
@@ -105,59 +107,79 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     public void recharge(WalletRechargeDTO dto) {
         Long userId = BaseContext.getCurrentId();
         String bizOrderNo = SerialNoUtil.generateRechargeNo();
-        // 充值记录
         WalletRecharge record = new WalletRecharge();
         record.setUserId(userId);
         record.setAmount(dto.getAmount());
         record.setBizOrderNo(bizOrderNo);
         record.setStatus(0); // WAIT_PAY
         record.setCreateTime(LocalDateTime.now());
+
         walletRechargeMapper.insert(record);
-        // 调用支付接口
-        // payService.createPayOrder()
+
+        // TODO 调用第三方支付接口（支付宝 / 微信）
     }
+
     // todo 提现
     @Transactional
     @Override
     public void withdraw(WalletWithdrawDTO dto) {
+
         Long userId = BaseContext.getCurrentId();
-        String bizOrderNo  = dto.getBizOrderNo();
-        if (bizOrderNo  == null || bizOrderNo .isEmpty()) {
-            bizOrderNo  = SerialNoUtil.generateWithdrawNo();
+
+        String bizOrderNo = dto.getBizOrderNo();
+        if (bizOrderNo == null || bizOrderNo.isEmpty()) {
+            bizOrderNo = SerialNoUtil.generateWithdrawNo();
         }
+
         BigDecimal amount = dto.getAmount();
-        // 查询钱包余额
+
         UserWallet wallet = userWalletMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserWallet>()
+                Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, userId)
         );
-        if (wallet == null || wallet.getBalance().compareTo(amount) < 0) {
+
+        if (wallet == null) {
+            throw new RuntimeException("钱包不存在");
+        }
+
+        if (wallet.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("余额不足");
         }
 
-        // 扣减余额 + 生成流水（bizType=5）
-        BigDecimal balanceBefore = wallet.getBalance();
-        wallet.setBalance(wallet.getBalance().subtract(amount))
-                .setTotalExpense(wallet.getTotalExpense().add(amount))
-                .setUpdateTime(LocalDateTime.now());
-        userWalletMapper.updateById(wallet);
+        BigDecimal before = wallet.getBalance();
+        Integer version = wallet.getVersion();
+
+        BigDecimal after = before.subtract(amount);
+        BigDecimal totalExpense = wallet.getTotalExpense().add(amount);
+
+        int update = userWalletMapper.updateWithdrawWallet(
+                wallet.getId(),
+                after,
+                totalExpense,
+                version
+        );
+
+        if (update == 0) {
+            throw new RuntimeException("提现失败，发生并发");
+        }
 
         // 写流水
         WalletLog log = new WalletLog();
         log.setUserId(userId);
         log.setWalletId(wallet.getId());
-        log.setBizType(5);
+        log.setBizType(WalletBizTypeConstant.WITHDRAW);
         log.setAmount(amount.negate());
-        log.setBalanceBefore(balanceBefore);
-        log.setBalanceAfter(wallet.getBalance());
+        log.setBalanceBefore(before);
+        log.setBalanceAfter(after);
         log.setFrozenBefore(wallet.getFrozenAmount());
         log.setFrozenAfter(wallet.getFrozenAmount());
         log.setBizOrderNo(bizOrderNo);
         log.setDescription("提现");
         log.setCreateTime(LocalDateTime.now());
+
         walletLogMapper.insert(log);
 
-        // TODO: 调用提现支付接口 支付宝
+        // TODO 调用提现接口（支付宝 / 微信）
     }
 
 
@@ -165,76 +187,110 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     @Override
     public void handleRechargeSuccess(String bizOrderNo) {
 
-        LambdaQueryWrapper<WalletRecharge> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WalletRecharge::getBizOrderNo, bizOrderNo);
-        WalletRecharge record = walletRechargeMapper.selectOne(queryWrapper);
+        WalletRecharge record = walletRechargeMapper.selectOne(
+                Wrappers.<WalletRecharge>lambdaQuery()
+                        .eq(WalletRecharge::getBizOrderNo, bizOrderNo)
+        );
+
         if (record == null) {
             throw new RuntimeException("充值记录不存在");
         }
-        if ( record.getStatus() == 1 ) {
-            return; // 防重复回调
+
+        // 幂等控制
+        if (record.getStatus() == WalletBizTypeConstant.RECHARGE) {
+            return;
         }
+
         Long userId = record.getUserId();
         BigDecimal amount = record.getAmount();
 
         UserWallet wallet = userWalletMapper.selectOne(
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, userId)
-                        .last("for update")
         );
+
         BigDecimal before = wallet.getBalance();
+        Integer version = wallet.getVersion();
 
-        wallet.setBalance(wallet.getBalance().add(amount));
-        wallet.setTotalIncome(wallet.getTotalIncome().add(amount));
+        BigDecimal after = before.add(amount);
+        BigDecimal income = wallet.getTotalIncome().add(amount);
 
-        userWalletMapper.updateById(wallet);
+        int update = userWalletMapper.updateRechargeWallet(
+                wallet.getId(),
+                after,
+                income,
+                version
+        );
+
+        if (update == 0) {
+            throw new RuntimeException("充值更新失败，发生并发");
+        }
+
         // 更新充值状态
-        record.setStatus(1);
+        record.setStatus(WalletBizTypeConstant.RECHARGE);
         walletRechargeMapper.updateById(record);
+
         // 写流水
         WalletLog log = new WalletLog();
         log.setUserId(userId);
         log.setWalletId(wallet.getId());
-        log.setBizType(1);
+        log.setBizType(WalletBizTypeConstant.RECHARGE);
         log.setAmount(amount);
         log.setBalanceBefore(before);
-        log.setBalanceAfter(wallet.getBalance());
+        log.setBalanceAfter(after);
         log.setFrozenBefore(wallet.getFrozenAmount());
         log.setFrozenAfter(wallet.getFrozenAmount());
         log.setBizOrderNo(bizOrderNo);
         log.setDescription("充值");
         log.setCreateTime(LocalDateTime.now());
+
         walletLogMapper.insert(log);
     }
 
     @Transactional
     @Override
     public void freezeAmount(Long userId, BigDecimal amount, String orderNo) {
+
         UserWallet wallet = userWalletMapper.selectOne(
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, userId)
-                        .last("for update")
         );
+
         if (wallet.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("余额不足");
         }
-        BigDecimal before = wallet.getBalance();
+
+        BigDecimal balanceBefore = wallet.getBalance();
         BigDecimal frozenBefore = wallet.getFrozenAmount();
-        wallet.setBalance(wallet.getBalance().subtract(amount));
-        wallet.setFrozenAmount(wallet.getFrozenAmount().add(amount));
-        userWalletMapper.updateById(wallet);
+        Integer version = wallet.getVersion();
+
+        BigDecimal balanceAfter = balanceBefore.subtract(amount);
+        BigDecimal frozenAfter = frozenBefore.add(amount);
+
+        int update = userWalletMapper.updateFreezeWallet(
+                wallet.getId(),
+                balanceAfter,
+                frozenAfter,
+                version
+        );
+
+        if (update == 0) {
+            throw new RuntimeException("冻结失败，发生并发");
+        }
+
         WalletLog log = new WalletLog();
         log.setUserId(userId);
         log.setWalletId(wallet.getId());
-        log.setBizType(2);
+        log.setBizType(WalletBizTypeConstant.ORDER_FREEZE);
         log.setAmount(amount.negate());
-        log.setBalanceBefore(before);
-        log.setBalanceAfter(wallet.getBalance());
+        log.setBalanceBefore(balanceBefore);
+        log.setBalanceAfter(balanceAfter);
         log.setFrozenBefore(frozenBefore);
-        log.setFrozenAfter(wallet.getFrozenAmount());
+        log.setFrozenAfter(frozenAfter);
         log.setBizOrderNo(orderNo);
         log.setDescription("订单冻结");
         log.setCreateTime(LocalDateTime.now());
+
         walletLogMapper.insert(log);
     }
 
@@ -245,26 +301,39 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         UserWallet wallet = userWalletMapper.selectOne(
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, userId)
-                        .last("for update")
         );
 
-        BigDecimal before = wallet.getBalance();
+        if (wallet.getFrozenAmount().compareTo(amount) < 0) {
+            throw new RuntimeException("冻结金额不足");
+        }
+
+        BigDecimal balanceBefore = wallet.getBalance();
         BigDecimal frozenBefore = wallet.getFrozenAmount();
+        Integer version = wallet.getVersion();
 
-        wallet.setBalance(wallet.getBalance().add(amount));
-        wallet.setFrozenAmount(wallet.getFrozenAmount().subtract(amount));
+        BigDecimal balanceAfter = balanceBefore.add(amount);
+        BigDecimal frozenAfter = frozenBefore.subtract(amount);
 
-        userWalletMapper.updateById(wallet);
+        int update = userWalletMapper.updateUnfreezeWallet(
+                wallet.getId(),
+                balanceAfter,
+                frozenAfter,
+                version
+        );
+
+        if (update == 0) {
+            throw new RuntimeException("解冻失败，发生并发");
+        }
 
         WalletLog log = new WalletLog();
         log.setUserId(userId);
         log.setWalletId(wallet.getId());
-        log.setBizType(4);
+        log.setBizType(WalletBizTypeConstant.CANCEL_UNFREEZE);
         log.setAmount(amount);
-        log.setBalanceBefore(before);
-        log.setBalanceAfter(wallet.getBalance());
+        log.setBalanceBefore(balanceBefore);
+        log.setBalanceAfter(balanceAfter);
         log.setFrozenBefore(frozenBefore);
-        log.setFrozenAfter(wallet.getFrozenAmount());
+        log.setFrozenAfter(frozenAfter);
         log.setBizOrderNo(orderNo);
         log.setDescription("订单解冻");
         log.setCreateTime(LocalDateTime.now());
@@ -273,33 +342,49 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     }
 
 
+
     @Transactional
     @Override
     public void transferFrozenToSeller(Long buyerId, Long sellerId, BigDecimal amount, String orderNo) {
 
-        // 锁 buyer
+        // 1 查询买家钱包
         UserWallet buyerWallet = userWalletMapper.selectOne(
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, buyerId)
-                        .last("for update")
         );
+
+        if (buyerWallet == null) {
+            throw new RuntimeException("买家钱包不存在");
+        }
 
         if (buyerWallet.getFrozenAmount().compareTo(amount) < 0) {
             throw new RuntimeException("冻结金额不足");
         }
 
+        // 记录旧值
         BigDecimal buyerFrozenBefore = buyerWallet.getFrozenAmount();
+        Integer buyerVersion = buyerWallet.getVersion();
 
-        buyerWallet.setFrozenAmount(buyerWallet.getFrozenAmount().subtract(amount));
-        buyerWallet.setTotalExpense(buyerWallet.getTotalExpense().add(amount));
+        // 新值
+        BigDecimal buyerFrozenAfter = buyerFrozenBefore.subtract(amount);
+        BigDecimal buyerTotalExpense = buyerWallet.getTotalExpense().add(amount);
 
-        userWalletMapper.updateById(buyerWallet);
+        // 2 乐观锁更新 buyer
+        int buyerUpdate = userWalletMapper.updateBuyerWallet(
+                buyerWallet.getId(),
+                buyerFrozenAfter,
+                buyerTotalExpense,
+                buyerVersion
+        );
 
-        // 锁 seller
+        if (buyerUpdate == 0) {
+            throw new RuntimeException("买家钱包更新失败，发生并发冲突");
+        }
+
+        // 3 查询卖家钱包
         UserWallet sellerWallet = userWalletMapper.selectOne(
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, sellerId)
-                        .last("for update")
         );
 
         if (sellerWallet == null) {
@@ -307,36 +392,47 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         }
 
         BigDecimal sellerBalanceBefore = sellerWallet.getBalance();
+        Integer sellerVersion = sellerWallet.getVersion();
 
-        sellerWallet.setBalance(sellerWallet.getBalance().add(amount));
-        sellerWallet.setTotalIncome(sellerWallet.getTotalIncome().add(amount));
+        BigDecimal sellerBalanceAfter = sellerBalanceBefore.add(amount);
+        BigDecimal sellerTotalIncome = sellerWallet.getTotalIncome().add(amount);
 
-        userWalletMapper.updateById(sellerWallet);
+        // 4 乐观锁更新 seller
+        int sellerUpdate = userWalletMapper.updateSellerWallet(
+                sellerWallet.getId(),
+                sellerBalanceAfter,
+                sellerTotalIncome,
+                sellerVersion
+        );
 
-        // buyer流水
+        if (sellerUpdate == 0) {
+            throw new RuntimeException("卖家钱包更新失败，发生并发冲突");
+        }
+
+        // 5 buyer流水
         WalletLog buyerLog = new WalletLog();
         buyerLog.setUserId(buyerId);
         buyerLog.setWalletId(buyerWallet.getId());
-        buyerLog.setBizType(3);
+        buyerLog.setBizType(WalletBizTypeConstant.ORDER_PAY);
         buyerLog.setAmount(amount.negate());
         buyerLog.setBalanceBefore(buyerWallet.getBalance());
         buyerLog.setBalanceAfter(buyerWallet.getBalance());
         buyerLog.setFrozenBefore(buyerFrozenBefore);
-        buyerLog.setFrozenAfter(buyerWallet.getFrozenAmount());
+        buyerLog.setFrozenAfter(buyerFrozenAfter);
         buyerLog.setBizOrderNo(orderNo);
         buyerLog.setDescription("订单支付给卖家");
         buyerLog.setCreateTime(LocalDateTime.now());
 
         walletLogMapper.insert(buyerLog);
 
-        // seller流水
+        // 6 seller流水
         WalletLog sellerLog = new WalletLog();
         sellerLog.setUserId(sellerId);
         sellerLog.setWalletId(sellerWallet.getId());
-        sellerLog.setBizType(6);
+        sellerLog.setBizType(WalletBizTypeConstant.ORDER_PAY);
         sellerLog.setAmount(amount);
         sellerLog.setBalanceBefore(sellerBalanceBefore);
-        sellerLog.setBalanceAfter(sellerWallet.getBalance());
+        sellerLog.setBalanceAfter(sellerBalanceAfter);
         sellerLog.setFrozenBefore(sellerWallet.getFrozenAmount());
         sellerLog.setFrozenAfter(sellerWallet.getFrozenAmount());
         sellerLog.setBizOrderNo(orderNo);
@@ -345,4 +441,5 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
 
         walletLogMapper.insert(sellerLog);
     }
+
 }

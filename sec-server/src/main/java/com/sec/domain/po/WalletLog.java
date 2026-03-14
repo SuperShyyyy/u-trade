@@ -36,7 +36,7 @@ public class WalletLog implements Serializable {
 
     private Long walletId;
 
-    @ApiModelProperty(value = "1-充值, 2-下单冻结, 3-确认收货, 4-取消解冻, 5-提现, 6-退款")
+    @ApiModelProperty(value = "1-充值, 2-下单冻结, 3-确认收货, 4-订单解冻 , 5-提现, 6-退款")
     private Integer bizType;
 
     @ApiModelProperty(value = "变动金额 (+/-)")
