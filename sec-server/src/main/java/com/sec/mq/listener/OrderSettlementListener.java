@@ -1,7 +1,7 @@
 package com.sec.mq.listener;
 
 import com.sec.constant.RabbitMQConstant;
-import com.sec.message.WalletSettlementMessage;
+import com.sec.message.OrderSettlementMessage;
 import com.sec.service.IUserWalletService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class OrderSettlementListener {
     private final StringRedisTemplate stringRedisTemplate;
 
     @RabbitListener(queues = RabbitMQConstant.QUEUE_ORDER_SETTLE_EXEC )
-    public void handle(WalletSettlementMessage msg, Channel channel, Message message) throws IOException {
+    public void handle(OrderSettlementMessage msg, Channel channel, Message message) throws IOException {
         long tag = message.getMessageProperties().getDeliveryTag();
         String messageId = message.getMessageProperties().getMessageId();
         String orderNo = msg.getOrderNo();

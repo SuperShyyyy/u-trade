@@ -18,7 +18,7 @@ import com.sec.mapper.ItemMapper;
 import com.sec.mapper.OrderMapper;
 import com.sec.mapper.PaymentMapper;
 import com.sec.mapper.ShipmentMapper;
-import com.sec.message.WalletSettlementMessage;
+import com.sec.message.OrderSettlementMessage;
 import com.sec.mq.sender.OrderCancelDelaySender;
 import com.sec.mq.sender.OrderSettlementSender;
 import com.sec.result.PageDTO;
@@ -30,11 +30,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +64,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final RedisTemplate redisTemplate ;
     private final IItemService itemService;
     private final IUserWalletService userWalletService;
-    private final OrderSettlementSender walletSettlementSender;
+    private final OrderSettlementSender orderSettlementSender;
     private final ItemMapper itemMapper;
     private final OrderCancelDelaySender orderCancelDelaySender;
 
@@ -513,13 +515,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         for (Order order : orders) {
             clearOrderCache(order);
             try {
-                WalletSettlementMessage msg = new WalletSettlementMessage(
+                OrderSettlementMessage msg = new OrderSettlementMessage(
                         order.getBuyerId(),
                         order.getSellerId(),
                         order.getTotalPrice(),
                         order.getOrderNo()
                 );
-                walletSettlementSender.send(msg);
+                orderSettlementSender.send(msg);
             } catch (Exception e) {
                 log.error("订单 {} 发送结算消息失败", order.getId(), e);
                 // 插入补偿记录表，例如：
@@ -528,118 +530,117 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
     }
 
-/*
-    // 添加定时任务
     @Override
-    @Transactional
-    public void autoCancelTimeoutOrders() {
-
-        LocalDateTime timeout = LocalDateTime.now().minusMinutes(30);
-
-        List<Long> ids = lambdaQuery()
-                .select(Order::getId)
-                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
-                .lt(Order::getCreatedAt, timeout)
-                .last("limit 100")
-                .list()
-                .stream()
-                .map(Order::getId)
-                .toList();
-
-        if (ids.isEmpty()) {
-            return;
+    @Transactional(rollbackFor = Exception.class)
+    public void shipment(Long orderId, String logisticsCompany, String trackingNumber) {
+        // 1. 获取当前卖家 ID
+        Long sellerId = BaseContext.getCurrentId();
+        if (sellerId == null) {
+            throw new BusinessException("用户未登录");
         }
 
-        boolean success = lambdaUpdate()
-                .in(Order::getId, ids)
-                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY) // 核心：双重检查
-                .set(Order::getStatus, OrderStatusConstant.CANCELLED)
-                .set(Order::getCancelledAt, LocalDateTime.now())
-                .set(Order::getCancelReason, "超时未支付自动取消")
-                .update();
-        // 3. 根据 boolean 结果判断是否继续后续逻辑
-        if (!success) {
-            log.info("自动取消订单任务执行完毕，但没有订单状态发生变更（可能已被支付或并发处理）");
-            return;
+        // 2. 查询订单（用于后续校验）
+        Order dbOrder = orderMapper.selectById(orderId);
+        if (dbOrder == null) {
+            throw new BusinessException("订单不存在");
+        }
+        if (!dbOrder.getSellerId().equals(sellerId)) {
+            throw new BusinessException("无权操作该订单");
         }
 
-        log.info("自动取消订单成功，开始释放商品库存...");
-
-        // 4. 释放被锁定的商品状态
-        // 因为 updateSuccess 为 true，说明至少有部分订单被取消了，需要释放对应的商品
-        // 为了精准，最好再次查询这些 ID 中实际被更新的订单对应的 itemId
-        // 直接尝试释放这些 itemId 带上 LOCKED 条件保证安全
-
-        List<Order> cancelledOrders = lambdaQuery()
-                .in(Order::getId, ids)
-                .eq(Order::getStatus, OrderStatusConstant.CANCELLED) // 只查刚刚被成功的
-                .select(Order::getItemId)
-                .list();
-
-        if (!cancelledOrders.isEmpty()) {
-            List<Long> itemIds = cancelledOrders.stream()
-                    .map(Order::getItemId)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-
-            // 批量释放商品：只有状态是 LOCKED 的才改为 ON_SALE
-            boolean itemReleaseSuccess = itemService.lambdaUpdate()
-                    .in(Item::getId, itemIds)
-                    .eq(Item::getStatus, ItemStatusConstant.LOCKED)
-                    .set(Item::getStatus, ItemStatusConstant.ON_SALE)
-                    .set(Item::getUpdateTime, LocalDateTime.now())
-                    .update();
-
-            if (!itemReleaseSuccess) {
-                log.warn("部分商品状态释放失败，可能需要人工介入检查。涉及商品ID: {}", itemIds);
+        // 3. 状态校验
+        if (!OrderStatusConstant.PAID.equals(dbOrder.getStatus())) {
+            if (OrderStatusConstant.SHIPPED.equals(dbOrder.getStatus())) {
+                log.info("订单 {} 已发货，本次操作将更新物流信息", orderId);
             } else {
-                log.info("成功释放 {} 个商品库存", itemIds.size());
+                throw new BusinessException("订单状态不可发货（当前状态：" + dbOrder.getStatus() + "）");
             }
         }
 
-    }
-
-*/
-    @Transactional
-    @Override
-    public void shipment(Long orderId, String logisticsCompany, String trackingNumber) {
-        Long sellerId  = BaseContext.getCurrentId();
+        // 4. 更新订单状态
         Order updateOrder = new Order();
         updateOrder.setId(orderId);
         updateOrder.setStatus(OrderStatusConstant.SHIPPED);
-        // order 不包含物流信息 在物流表关联orderId
-        //updateOrder.setLogisticsCompany(logisticsCompany); // 保存物流公司
-        //updateOrder.setTrackingNumber(trackingNumber);     //  保存物流单号
+
         LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Order::getId, orderId)
-                .eq(Order::getSellerId, sellerId) // 权限校验放在 SQL 中
-                // 关键：确保只有未发货的订单才能被更新，防止并发和状态错乱
-                // 允许发货的状态是：已支付
+                .eq(Order::getSellerId, sellerId)
                 .in(Order::getStatus, OrderStatusConstant.PAID, OrderStatusConstant.SHIPPED);
-        int success = orderMapper.update(updateOrder, updateWrapper);
-        if (success == 0) {
-            // 更新失败，说明要么 ID 不存在，要么卖家不对，要么状态不对（已被别人发货或取消）
-            // 需要查询具体原因返回给用户，或者直接抛通用异常
-            Order dbOrder = orderMapper.selectById(orderId);
-            if (dbOrder == null || !dbOrder.getSellerId().equals(sellerId)) {
-                throw new BusinessException("订单不存在或无权操作");
-            } else {
-                throw new BusinessException("订单状态已变更，无法重复发货（当前状态：" + dbOrder.getStatus() + "）");
+
+        int orderUpdateCount = orderMapper.update(updateOrder, updateWrapper);
+        if (orderUpdateCount == 0) {
+            Order freshOrder = orderMapper.selectById(orderId);
+            if (freshOrder == null) {
+                throw new BusinessException("订单不存在");
             }
+            if (!freshOrder.getSellerId().equals(sellerId)) {
+                throw new BusinessException("无权操作该订单");
+            }
+            throw new BusinessException("订单状态已变更，无法发货（当前状态：" + freshOrder.getStatus() + "）");
         }
-        //新增物流信息
-        Shipment shipment = new Shipment();
-        shipment.setOrderId(orderId);
-        shipment.setSellerId(sellerId);
-        shipment.setStatus(OrderStatusConstant.SHIPPED);
-        shipment.setCreatedAt(LocalDateTime.now());
-        shipment.setCompany(logisticsCompany);
-        shipment.setTrackingNo(trackingNumber);
-        int insertSuccess = shipmentMapper.insert(shipment);
-        if (insertSuccess == 0) {
+
+        // 5. 处理物流信息（新增或更新）
+        Shipment existingShipment = shipmentMapper.selectOne(
+                new LambdaQueryWrapper<Shipment>()
+                        .eq(Shipment::getOrderId, orderId)
+                        .eq(Shipment::getSellerId, sellerId)
+        );
+
+        int shipmentOperateCount;
+        if (existingShipment == null) {
+            // 新增物流记录
+            Shipment shipment = new Shipment();
+            shipment.setOrderId(orderId);
+            shipment.setSellerId(sellerId);
+            shipment.setStatus(ShipmentStatusConstant.SHIPPED);
+            shipment.setCompany(logisticsCompany);
+            shipment.setTrackingNo(trackingNumber);
+            shipment.setCreatedAt(LocalDateTime.now());
+            shipment.setUpdateTime(LocalDateTime.now());
+            shipmentOperateCount = shipmentMapper.insert(shipment);
+        } else {
+            // 更新已有物流记录
+            Shipment updateShipment = new Shipment();
+            updateShipment.setCompany(logisticsCompany);
+            updateShipment.setTrackingNo(trackingNumber);
+            updateShipment.setStatus(ShipmentStatusConstant.SHIPPED);
+            updateShipment.setUpdateTime(LocalDateTime.now());
+
+            LambdaUpdateWrapper<Shipment> shipmentUpdateWrapper = new LambdaUpdateWrapper<>();
+            shipmentUpdateWrapper.eq(Shipment::getOrderId, orderId)
+                    .eq(Shipment::getSellerId, sellerId);
+            shipmentOperateCount = shipmentMapper.update(updateShipment, shipmentUpdateWrapper);
+        }
+
+        if (shipmentOperateCount == 0) {
             throw new BusinessException("物流信息保存失败");
         }
+
+        // 6. 【关键】写入 Redis ZSet 延迟队列（7 天后自动确认收货）
+        try {
+            String zsetKey = "order:auto_confirm:queue";
+            // 过期时间 = 当前时间 + 7 天 + 15 分钟缓冲
+            long expireTimestamp = System.currentTimeMillis() / 1000 + 7 * 24 * 3600 + 15 * 60;
+            String orderIdStr = String.valueOf(orderId);
+
+            redisTemplate.opsForZSet().add(zsetKey, orderIdStr, expireTimestamp);
+            log.info("订单 {} 发货成功，已加入自动确认队列（过期时间：{}）",
+                    orderId, LocalDateTime.ofEpochSecond(expireTimestamp, 0, ZoneOffset.ofHours(8)));
+
+        } catch (Exception e) {
+            // Redis 写入失败不影响主流程，DB 兜底任务会处理
+            log.error("订单 {} 发货成功，但写入 Redis 延迟队列失败，将由 DB 兜底任务处理", orderId, e);
+        }
+
+        // 7. 清理订单缓存（传入完整订单对象）
+        try {
+            clearOrderCache(dbOrder);
+            log.info("订单 {} 缓存已清理", orderId);
+        } catch (Exception e) {
+            log.error("订单 {} 清理缓存失败", orderId, e);
+        }
+
+        log.info("订单 {} 发货完成，物流公司：{}，运单号：{}", orderId, logisticsCompany, trackingNumber);
     }
 
     @Override
@@ -684,6 +685,79 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return shipmentVO;
     }
 
+    @Scheduled(cron = "0 */3 * * * ?") // 3分钟一次
+    public void scanRedisAutoConfirm() {
+        String zsetKey = "order:auto_confirm:queue";
+        long nowSeconds = System.currentTimeMillis() / 1000;
+
+        // 1. 取出最多 500 条到期的订单 (避免一次处理太多阻塞)
+        Set<String> expiredOrderIds = redisTemplate.opsForZSet()
+                .rangeByScore(zsetKey, 0, nowSeconds, 0, 500);
+
+        if (expiredOrderIds == null || expiredOrderIds.isEmpty()) {
+            return;
+        }
+
+        for (String idStr : expiredOrderIds) {
+            Long orderId = Long.valueOf(idStr);
+
+            // 2. 【关键】尝试从 ZSet 移除，作为“抢占锁”
+            // 如果 remove 返回 1，说明我抢到了；如果返回 0，说明可能被其他实例或兜底任务处理了
+            Long removed = redisTemplate.opsForZSet().remove(zsetKey, idStr);
+
+            if (removed != null && removed > 0) {
+                try {
+                    // 3. 执行真正的业务逻辑 (调用 Service 层，内部包含 DB 更新)
+                    // 注意：这里不要直接调 autoConfirm() 那个批量方法，要调单个处理的方法
+                    processSingleOrderConfirm(orderId);
+                } catch (Exception e) {
+                    log.error("Redis 扫描任务处理订单 {} 失败，将在下次 DB 兜底中重试", orderId, e);
+                    // 可选：如果失败，可以重新加回 ZSet (带一点延迟)，或者直接放弃让 DB 兜底
+                    // 最简单策略：放弃，让 30min 的 DB 兜底任务去捞
+                }
+            }
+        }
+    }
+
+    // 单个订单处理逻辑 (提取出来)
+    @Transactional(rollbackFor = Exception.class)
+    public void processSingleOrderConfirm(Long orderId) {
+        // 1. 尝试更新订单状态 (利用数据库行锁/乐观锁)
+        // SQL: UPDATE order SET status=FINISHED ... WHERE id=? AND status=SHIPPED AND updated_at < ...
+        boolean updated = lambdaUpdate()
+                .eq(Order::getId, orderId)
+                .eq(Order::getStatus, OrderStatusConstant.SHIPPED) // 双重检查
+                .lt(Order::getUpdatedAt, LocalDateTime.now().minusDays(7)) // 再次校验时间
+                .set(Order::getStatus, OrderStatusConstant.FINISHED)
+                .set(Order::getCompletedAt, LocalDateTime.now())
+                .update();
+
+        if (!updated) {
+            // 说明订单状态变了（比如用户退款了），或者已经被 DB 兜底任务更新了
+            log.info("订单 {} 无需 Redis 任务处理（状态已变或已被处理）", orderId);
+            return;
+        }
+
+        // 2. 更新物流表
+        shipmentService.lambdaUpdate()
+                .eq(Shipment::getOrderId, orderId)
+                .eq(Shipment::getStatus, OrderStatusConstant.SHIPPED)
+                .set(Shipment::getStatus, ShipmentStatusConstant.FINISHED)
+                .set(Shipment::getDeliveredAt, LocalDateTime.now())
+                .update();
+
+        // 3. 发送结算消息 (只有 DB 更新成功了才发)
+        Order order = orderMapper.selectById(orderId); // 获取最新信息
+        if (order != null) {
+            clearOrderCache(order);
+            OrderSettlementMessage msg = new OrderSettlementMessage(
+                    order.getBuyerId(), order.getSellerId(), order.getTotalPrice(), order.getOrderNo()
+            );
+            orderSettlementSender.send(msg);
+            log.info("订单 {} 自动确认成功，结算消息已发送", orderId);
+        }
+    }
+
     private void clearOrderCache(Order order) {
 
         Set<String> keys = new HashSet<>();
@@ -710,6 +784,87 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!keys.isEmpty()) {
             redisTemplate.delete(keys);
             log.debug("清除订单缓存: {}", keys);
+        }
+    }
+
+
+    @Scheduled(cron = "0 */30 * * * ?") // 30分钟一次
+    @Transactional(rollbackFor = Exception.class)
+    public void autoConfirmDbCompensation() {
+        // 1. 查询符合条件的订单 (带上 limit 防止大事务)
+        List<Order> orders = lambdaQuery()
+                .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
+                .lt(Order::getUpdatedAt, LocalDateTime.now().minusDays(7))
+                // 可选：加一个标记位 is_auto_processed = 0 会更好，如果没有就用状态判断
+                .last("limit 200")
+                .list();
+
+        if (orders.isEmpty()) return;
+
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 2. 批量更新 (核心：带上状态校验，利用数据库原子性)
+        // 只有状态依然是 SHIPPED 的才会被更新成功
+        boolean updateSuccess = lambdaUpdate()
+                .in(Order::getId, orderIds)
+                .eq(Order::getStatus, OrderStatusConstant.SHIPPED) // 这里的 eq 保证了幂等
+                .lt(Order::getUpdatedAt, LocalDateTime.now().minusDays(7))
+                .set(Order::getStatus, OrderStatusConstant.FINISHED)
+                .set(Order::getCompletedAt, now)
+                .update();
+
+        if (!updateSuccess) {
+            log.info("DB 兜底任务：无订单需要更新（可能已被 Redis 任务处理）");
+            return;
+        }
+
+        // 3. 批量更新物流
+        shipmentService.lambdaUpdate()
+                .in(Shipment::getOrderId, orderIds)
+                .eq(Shipment::getStatus, ShipmentStatusConstant.SHIPPED)
+                .set(Shipment::getStatus, ShipmentStatusConstant.FINISHED)
+                .set(Shipment::getDeliveredAt, now)
+                .update();
+
+        // 4. 发送消息 & 清理缓存
+        // 注意：这里只处理那些“真正被本次 SQL 更新成功”的订单
+        // 由于 MyBatis-Plus 的 update 返回值只是影响行数，不知道具体哪些行成功了
+        // 严谨做法：再次查询这些 ID 中状态变为 FINISHED 且 completed_at 是现在的订单
+        // 或者简单点：循环处理，内部再做一次检查
+
+        for (Order order : orders) {
+            // 二次检查：确保它真的是刚刚被我们更新的 (防止并发间隙)
+            Order freshOrder = orderMapper.selectById(order.getId());
+            if (freshOrder != null &&
+                    freshOrder.getStatus().equals(OrderStatusConstant.FINISHED) &&
+                    freshOrder.getCompletedAt() != null &&
+                    freshOrder.getCompletedAt().isAfter(now.minusMinutes(1))) { // 刚更新的
+
+                clearOrderCache(freshOrder);
+                try {
+                    OrderSettlementMessage msg = new OrderSettlementMessage(
+                            freshOrder.getBuyerId(),
+                            freshOrder.getSellerId(),
+                            freshOrder.getTotalPrice(),
+                            freshOrder.getOrderNo()
+                    );
+                    orderSettlementSender.send(msg);
+                    log.info("DB 兜底任务：订单 {} 确认成功，消息已补发", freshOrder.getId());
+                } catch (Exception e) {
+                    log.error("DB 兜底任务：订单 {} 发送结算消息失败，需人工介入", freshOrder.getId(), e);
+                    // 记录补偿表
+                }
+            } else {
+                // 说明这个订单在批量更新后、循环处理前，状态又被改了（极小概率），或者是 Redis 任务刚处理完
+                log.debug("订单 {} 在兜底任务中跳过（状态不一致）", order.getId());
+            }
+        }
+
+        // 5. 可选：清理 Redis 中可能残留的这些订单 ID (双重保险)
+        if (!orderIds.isEmpty()) {
+            redisTemplate.opsForZSet().remove("order:auto_confirm:queue",
+                    orderIds.stream().map(String::valueOf).toArray(String[]::new));
         }
     }
 

@@ -42,11 +42,7 @@ public class RabbitMQConstant {
     /** 自动结算 - 实际执行队列 (消费者监听这里，执行确认收货+打款) */
     public static final String QUEUE_ORDER_SETTLE_EXEC = "order.settle.exec.queue";
     /** 自动结算 - 实际执行路由键 */
-    public static final String ROUTING_KEY_ORDER_SETTLE_EXEC = "order.cancel.exec";
-
-    // 保留原有的 wallet 命名作为别名或注释，如果老代码依赖它，可以暂时保留，但建议迁移
-    // public static final String EXCHANGE_ORDER_SETTLE = EXCHANGE_ORDER_SETTLE_EXEC;
-
+    public static final String ROUTING_KEY_ORDER_SETTLE_EXEC = "order.settle.exec";
 
     // ==================== 场景三：(可选) 通用延迟占位 ====================
     // 如果之前那个 QUEUE_ORDER_DELAY 是想做通用的，建议废弃，改为具体业务命名。

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class WalletSettlementMessage {
+public class OrderSettlementMessage {
     private Long buyerId;
     private Long sellerId;
     private BigDecimal amount;
@@ -17,7 +17,7 @@ public class WalletSettlementMessage {
     private String messageId;  // 新增字段
     private Long timestamp;    // 新增时间戳
 
-    public WalletSettlementMessage(Long buyerId, Long sellerId, BigDecimal amount, String orderNo) {
+    public OrderSettlementMessage(Long buyerId, Long sellerId, BigDecimal amount, String orderNo) {
         this.buyerId = buyerId;
         this.sellerId = sellerId;
         this.amount = amount;

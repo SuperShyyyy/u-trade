@@ -3,7 +3,7 @@ package com.sec.mq.sender;
 import com.alibaba.fastjson2.JSON;
 import com.sec.constant.RabbitMQConstant;
 import com.sec.domain.po.MqMessageLog;
-import com.sec.message.WalletSettlementMessage;
+import com.sec.message.OrderSettlementMessage;
 import com.sec.service.IMqMessageLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class OrderSettlementSender {
     private IMqMessageLogService mqMessageLogService;
     private final RabbitTemplate rabbitTemplate;
 
-    public void send(WalletSettlementMessage msg) {
+    public void send(OrderSettlementMessage msg) {
         String messageId = msg.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
         msg.setMessageId(messageId);
         msg.setTimestamp(System.currentTimeMillis());
@@ -46,8 +46,8 @@ public class OrderSettlementSender {
         message.getMessageProperties().setTimestamp(new Date());
 
         rabbitTemplate.convertAndSend(
-                RabbitMQConstant.EXCHANGE_ORDER_SETTLE_DELAY,
-                RabbitMQConstant.ROUTING_KEY_ORDER_SETTLE_DELAY,
+                RabbitMQConstant.EXCHANGE_ORDER_SETTLE_EXEC,
+                RabbitMQConstant.ROUTING_KEY_ORDER_SETTLE_EXEC,
                 message,
                 correlationData
         );
