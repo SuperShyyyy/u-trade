@@ -15,35 +15,18 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.UUID;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderSettlementSender {
-    private IMqMessageLogService mqMessageLogService;
     private final RabbitTemplate rabbitTemplate;
 
+    // 只负责发消息，不再负责落库
     public void send(OrderSettlementMessage msg) {
-        String messageId = msg.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
-        msg.setMessageId(messageId);
-        msg.setTimestamp(System.currentTimeMillis());
-
-        // 1. 插入消息发送记录（发送中）
-        MqMessageLog log = new MqMessageLog();
-        log.setMessageId(messageId);
-        log.setExchange(RabbitMQConstant.EXCHANGE_ORDER_SETTLE_DELAY);
-        log.setRoutingKey(RabbitMQConstant.ROUTING_KEY_ORDER_SETTLE_DELAY);
-        log.setMessageBody(JSON.toJSONString(msg));
-        log.setStatus(0); // 发送中
-        log.setRetryCount(0);
-        mqMessageLogService.insert(log);
-
-        // 2. 发送消息
-        CorrelationData correlationData = new CorrelationData(messageId);
+        CorrelationData correlationData = new CorrelationData(msg.getMessageId());
         Message message = rabbitTemplate.getMessageConverter().toMessage(msg, null);
         message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-        message.getMessageProperties().setMessageId(messageId);
-        message.getMessageProperties().setTimestamp(new Date());
+        message.getMessageProperties().setMessageId(msg.getMessageId());
 
         rabbitTemplate.convertAndSend(
                 RabbitMQConstant.EXCHANGE_ORDER_SETTLE_EXEC,
