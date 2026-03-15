@@ -25,12 +25,5 @@ public class OrderTask {
         log.info("自动确认收货任务执行完成");
     }
 
-    @Scheduled (cron = "0 */3 * * * ?")
-    public void autoCancelOrder() {
-        log.info("开始执行自动取消超时订单任务");
 
-        orderService.autoCancelTimeoutOrders();
-
-        log.info("自动取消超时订单任务完成");
-    }
 }

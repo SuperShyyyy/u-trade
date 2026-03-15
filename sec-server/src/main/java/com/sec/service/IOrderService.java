@@ -57,9 +57,11 @@ public interface IOrderService extends IService<Order> {
      */
     void autoConfirm();
 
-    void autoCancelTimeoutOrders();
+ //   void autoCancelTimeoutOrders();
 
     void shipment(Long orderId, String logisticsCompany, String trackingNumber);
 
     ShipmentVO queryShipmentByOrderId(Long orderId);
+
+    void cancelOrderInternal(Long orderId);
 }

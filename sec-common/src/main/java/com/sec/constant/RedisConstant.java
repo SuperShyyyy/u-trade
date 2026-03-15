@@ -49,4 +49,8 @@ public class RedisConstant {
 
     //搜索记录
     public static final String HISTORY_SEARCH = "history:search:";
+
+
+    //redis自动确认收货
+    public static final String AUTO_CONFIRM_KEY = "order:auto_confirm:zset";
 }

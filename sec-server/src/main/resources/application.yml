@@ -35,11 +35,16 @@ spring:
       retry:
         enabled: true # 开启超时重试机制
         initial-interval: 1000ms
-        multiplier: 1
+        multiplier: 2
         max-attempts: 3
+        max-interval: 10000ms
+      mandatory: true
     listener:
       simple:
         acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: false
     publisher-confirm-type: correlated
     publisher-returns: true
     host: 192.168.150.101
