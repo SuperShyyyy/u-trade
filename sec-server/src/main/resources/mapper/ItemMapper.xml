@@ -1,5 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sec.mapper.ItemMapper">
-
+    <select id="selectWithSellerCredit" resultType="com.sec.domain.po.Item">
+        SELECT
+            i.id,
+            i.seller_id AS sellerId,
+            i.title,
+            i.price,
+            i.cover,
+            i.view_count AS viewCount,
+            i.want_count AS wantCount,
+            i.create_time AS createTime,
+            i.is_free_shipping AS isFreeShipping,
+            i.shipping_fee AS shippingFee,
+            i.status,
+            i.audit_status AS auditStatus,
+            i.is_deleted AS isDeleted,
+            u.credit_score AS sellerCreditScore
+        FROM item i
+                 LEFT JOIN user u ON i.seller_id = u.id
+        WHERE i.status = 1
+          AND i.audit_status = 1
+          AND i.is_deleted = 0
+        ORDER BY i.create_time DESC
+            LIMIT #{limit}
+    </select>
 </mapper>

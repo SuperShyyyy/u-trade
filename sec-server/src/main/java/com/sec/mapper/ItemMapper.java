@@ -3,6 +3,9 @@ package com.sec.mapper;
 import com.sec.domain.po.Item;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * <p>
@@ -15,4 +18,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ItemMapper extends BaseMapper<Item> {
 
+    List<Item> selectWithSellerCredit(@Param("limit") int limit);
 }

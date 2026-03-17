@@ -73,4 +73,7 @@ public class Item implements Serializable {
 
     private BigDecimal shippingFee; //不包邮 邮费
 
+    
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private Integer sellerCreditScore;
 }

@@ -3,12 +3,13 @@ package com.sec.domain.vo;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class ItemVO {
+public class ItemVO implements Serializable {
 
     private Long id;                 // 商品ID
     private Long sellerId;
@@ -22,4 +23,10 @@ public class ItemVO {
     private Integer status;          // 商品状态（0下架 1上架 2审核中 -1已售出）
     private Integer auditStatus;     // 审核状态 (0待审核 1审核通过 2拒绝)
     private LocalDateTime createTime;// 创建时间
+
+    // 补充推荐所需字段
+    private Integer viewCount;       // 浏览量
+    private Integer wantCount;       // 收藏量（想要人数）
+    private Integer isFreeShipping;  // 是否包邮
+    private BigDecimal shippingFee;  // 运费
 }
