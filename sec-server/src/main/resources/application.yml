@@ -5,6 +5,8 @@ spring:
       port: 6379
   elasticsearch:
     uris: http://192.168.150.101:9200
+    ssl:
+      verification-mode: none
   application:
     name: sec-server
   profiles:
@@ -42,7 +44,7 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
-        prefetch: 1
+        prefetch: 10
         retry:
           enabled: false
     publisher-confirm-type: correlated

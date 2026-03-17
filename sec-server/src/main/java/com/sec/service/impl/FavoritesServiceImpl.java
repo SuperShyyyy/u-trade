@@ -57,6 +57,9 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
         favorite.setCreateTime(LocalDateTime.now());
         try {
             this.save(favorite);
+            itemMapper.update(null, new LambdaUpdateWrapper<Item>()
+                    .setSql("want_count = want_count + 1")
+                    .eq(Item::getId, itemId));
         } catch (org.springframework.dao.DuplicateKeyException e) {
             // 捕获唯一索引冲突
             throw new BusinessException("该商品已收藏");
@@ -141,6 +144,10 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
         if (!rows) {
             throw new BusinessException("收藏的商品不存在");
         }
+
+        itemMapper.update(null, new LambdaUpdateWrapper<Item>()
+                .setSql("want_count = want_count - 1")
+                .eq(Item::getId, itemId));
 
         // 删除 Redis 缓存
         Set<String> keys = stringRedisTemplate.keys(RedisConstant.USER_FAVORITE_KEY + userId + ":*");

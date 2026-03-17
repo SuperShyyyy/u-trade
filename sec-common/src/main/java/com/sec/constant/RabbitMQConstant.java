@@ -44,8 +44,19 @@ public class RabbitMQConstant {
     /** 自动结算 - 实际执行路由键 */
     public static final String ROUTING_KEY_ORDER_SETTLE_EXEC = "order.settle.exec";
 
-    // ==================== 场景三：(可选) 通用延迟占位 ====================
-    // 如果之前那个 QUEUE_ORDER_DELAY 是想做通用的，建议废弃，改为具体业务命名。
-    // 如果确实需要动态创建不同时间的延迟队列，可以使用前缀模式：
-    public static final String PREFIX_QUEUE_ORDER_DELAY_DYNAMIC = "order.delay.dynamic.queue.";
+    // ==================== 场景三：Item在MYSQL更新后ES搜索异步更新 ====================
+
+    /** 商品同步交换机 */
+    public static final String EXCHANGE_ITEM_SYNC = "item.sync.exchange";
+
+    /** 商品同步队列 */
+    public static final String QUEUE_ITEM_SYNC = "item.sync.queue";
+
+    /** 商品同步路由键 */
+    public static final String ROUTING_KEY_ITEM_SYNC = "item.sync.routing";
+
+    // ==================== 死信队列 ====================
+    public static final String DLX_EXCHANGE = "dlx.exchange";
+    public static final String DLX_QUEUE = "dlx.queue";
+    public static final String DLX_ROUTING_KEY = "dlx.routing";
 }

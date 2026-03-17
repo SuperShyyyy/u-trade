@@ -10,13 +10,13 @@ import java.time.LocalDateTime;
 public class CategoryDocument {
 
     @Id
-    private Integer id;
+    private Long id;
 
     @Field(type = FieldType.Text, analyzer = "ik_max_word")
     private String name;
 
     @Field(type = FieldType.Integer)
-    private Integer parentId;
+    private Long parentId;
 
     @Field(type = FieldType.Integer)
     private Integer level;

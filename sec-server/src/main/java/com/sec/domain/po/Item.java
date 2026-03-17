@@ -43,7 +43,7 @@ public class Item implements Serializable {
 
     private BigDecimal originalPrice;
 
-    private Integer categoryId;
+    private Long categoryId;
 
     private String cover;
 

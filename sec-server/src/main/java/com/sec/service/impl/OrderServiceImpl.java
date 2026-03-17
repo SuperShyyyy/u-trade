@@ -29,6 +29,8 @@ import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -55,7 +57,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements IOrderService {
-    private final OrderServiceImpl self;
+
+
     private final OrderMapper orderMapper;
     private final PaymentMapper paymentMapper;
     private final ShipmentMapper shipmentMapper;
@@ -69,6 +72,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final ItemMapper itemMapper;
     private final OrderCancelDelaySender orderCancelDelaySender;
     private final IMqMessageLogService mqMessageLogService;
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
@@ -467,16 +473,21 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!shipmentUpdated) {
             log.warn("订单 {} 已确认收货，但同步物流表状态失败，可能状态不一致", orderId);
         }
+
         // 4. 更新缓存
         clearOrderCache(order);
 
-        // 5. 资金结算 调用 WalletService
+        // 5. 删除发货时在redis创建的过期时间
+        redisTemplate.opsForZSet().remove("order:auto_confirm:queue", String.valueOf(orderId));
+
+        // 6. 资金结算 调用 WalletService
         userWalletService.transferFrozenToSeller(
                 order.getBuyerId(),
                 order.getSellerId(),
                 order.getTotalPrice(),
                 order.getOrderNo()
         );
+
     }
 
 
@@ -566,13 +577,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("物流信息保存失败");
         }
 
-        // 6. 【关键】写入 Redis ZSet 延迟队列（7 天后自动确认收货）
+        // 6.写入 Redis ZSet 延迟队列（7 天后自动确认收货）
         try {
             String zsetKey = "order:auto_confirm:queue";
-            // 过期时间 = 当前时间 + 7 天 + 15 分钟缓冲
-            long expireTimestamp = System.currentTimeMillis() / 1000 + 7 * 24 * 3600 + 15 * 60;
+            // 过期时间 = 当前时间 + 7 天
+            //redis扫过期时间 ： 定时扫描 判断当前时间是否超过过期时间
+            long expireTimestamp = System.currentTimeMillis() / 1000 + 7 * 24 * 3600;
             String orderIdStr = String.valueOf(orderId);
-
             redisTemplate.opsForZSet().add(zsetKey, orderIdStr, expireTimestamp);
             log.info("订单 {} 发货成功，已加入自动确认队列（过期时间：{}）",
                     orderId, LocalDateTime.ofEpochSecond(expireTimestamp, 0, ZoneOffset.ofHours(8)));
@@ -657,7 +668,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
             if (removed != null && removed > 0) {
                 try {
-                    self.processSingleOrderConfirm(orderId);
+                    //创建代理对象调用自身
+                    OrderServiceImpl proxy = applicationContext.getBean(OrderServiceImpl.class);
+                    proxy.processSingleOrderConfirm(orderId);
                 } catch (Exception e) {
                     log.error("Redis 扫描任务处理订单 {} 失败，将在下次 DB 兜底中重试", orderId, e);
                     // 可选：如果失败，可以重新加回 ZSet (带一点延迟)，或者直接放弃让 DB 兜底
@@ -696,7 +709,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
     }
 
-  @Scheduled(cron = "0 */30 * * * ?") // 30分钟一次
+  @Scheduled(cron = "0 */30 * * * ?")
     public void autoConfirmDbCompensation() {
         // 1. 给 Redis 留足时间：查询发货超过 7 天 + 30 分钟的订单
         LocalDateTime thresholdTime = LocalDateTime.now().minusDays(7).minusMinutes(30);
@@ -712,9 +725,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 2. 循环处理，彻底告别大事务
         for (Order order : orders) {
             try {
-                // 通过 Spring 代理对象调用，否则 processSingleOrderConfirm 的事务会失效！
-
-                self.processSingleOrderConfirm(order.getId());
+                // 通过 Spring 代理对象调用
+                OrderServiceImpl proxy = applicationContext.getBean(OrderServiceImpl.class);
+                proxy.processSingleOrderConfirm(order.getId());
             } catch (Exception e) {
                 log.error("DB 兜底任务：订单 {} 自动确认异常，跳过等待下次扫描", order.getId(), e);
             }
@@ -757,7 +770,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         msg.setMessageId(messageId);
         msg.setTimestamp(System.currentTimeMillis());
 
-        // 4. 【关键点】在当前数据库事务中，直接落库消息记录！
+        // 4. 在当前数据库事务中 直接落库消息记录
         MqMessageLog mqLog = new MqMessageLog();
         mqLog.setMessageId(messageId);
         mqLog.setExchange(RabbitMQConstant.EXCHANGE_ORDER_SETTLE_EXEC);

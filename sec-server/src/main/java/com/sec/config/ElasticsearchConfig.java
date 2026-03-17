@@ -19,7 +19,7 @@ public class ElasticsearchConfig {
     public ElasticsearchClient elasticsearchClient() {
 
         RestClient restClient = RestClient.builder(
-                new HttpHost("localhost", 9200)
+                new HttpHost("192.168.150.101", 9200)
         ).build();
 
 

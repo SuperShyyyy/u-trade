@@ -15,9 +15,60 @@ import java.util.Map;
 @Configuration
 public class RabbitMQQueueConfig {
 
+    // ==================== 商品同步 ES ====================
+
+    /** 商品同步交换机 */
+    @Bean
+    public DirectExchange itemSyncExchange() {
+        return new DirectExchange(RabbitMQConstant.EXCHANGE_ITEM_SYNC, true, false);
+    }
+
+    /** 商品同步队列 (配置死信) */
+    @Bean
+    public Queue itemSyncQueue() {
+        Map<String, Object> args = new HashMap<>(4);
+        // 死信交换机
+        args.put("x-dead-letter-exchange", RabbitMQConstant.DLX_EXCHANGE);
+        // 死信路由键
+        args.put("x-dead-letter-routing-key", RabbitMQConstant.DLX_ROUTING_KEY);
+
+        return QueueBuilder.durable(RabbitMQConstant.QUEUE_ITEM_SYNC)
+                .withArguments(args)
+                .build();
+    }
+
+    /** 商品同步队列绑定 */
+    @Bean
+    public Binding itemSyncBinding() {
+        return BindingBuilder.bind(itemSyncQueue())
+                .to(itemSyncExchange())
+                .with(RabbitMQConstant.ROUTING_KEY_ITEM_SYNC);
+    }
+
+    // ==================== 死信队列配置 ====================
+
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        return new DirectExchange(RabbitMQConstant.DLX_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue deadLetterQueue() {
+        return QueueBuilder.durable(RabbitMQConstant.DLX_QUEUE).build();
+    }
+
+    @Bean
+    public Binding deadLetterBinding() {
+        return BindingBuilder.bind(deadLetterQueue())
+                .to(deadLetterExchange())
+                .with(RabbitMQConstant.DLX_ROUTING_KEY);
+    }
+
+
     // ==================== 场景一：订单自动取消 (30分钟未支付) ====================
     // 流程：发送 -> [Delay Exchange] -> [Delay Queue (TTL 30m)]
     //       -> (过期) -> [Exec Exchange] -> [Exec Queue] -> 消费者
+
 
     /** 1.1 延迟交换机 (入口) */
     @Bean

@@ -62,7 +62,7 @@ public class ItemEsService {
 
 
     // 分页搜索 按标题匹配
-    public Page<ItemDocument> searchByTitle(String keyword, int page, int size) throws IOException {
+   /* public Page<ItemDocument> searchByTitle(String keyword, int page, int size) throws IOException {
         if (keyword == null || keyword.isEmpty()) {
             throw new IllegalArgumentException("搜索关键词为空");
         }
@@ -100,5 +100,39 @@ public class ItemEsService {
                 return (int) totalPages;
             }
         };
+    }*/
+    public Page<ItemDocument> searchByTitle(String keyword, int page, int size) throws IOException {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new IllegalArgumentException("搜索关键词为空");
+        }
+
+        // ← 修复：page 从 0 开始计算
+        int currentPage = Math.max(page, 0);
+        int from = currentPage * size;
+
+        Query query = Query.of(q -> q
+                .bool(b -> b
+                        .must(m -> m.match(mt -> mt.field("title").query(keyword)))
+                        .filter(f -> f.term(t -> t.field("status").value(ItemStatusConstant.ON_SALE)))
+                        .filter(f -> f.term(t -> t.field("isDeleted").value(0)))
+                )
+        );
+
+        SearchRequest request = SearchRequest.of(s -> s
+                .index(INDEX)
+                .query(query)
+                .from(from)
+                .size(size)
+        );
+
+        SearchResponse<ItemDocument> response = esClient.search(request, ItemDocument.class);
+
+        List<ItemDocument> items = response.hits().hits().stream()
+                .map(Hit::source)
+                .collect(Collectors.toList());
+
+        long totalHits = response.hits().total().value();
+
+        return new PageImpl<>(items, PageRequest.of(currentPage, size), totalHits);
     }
 }

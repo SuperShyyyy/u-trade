@@ -33,8 +33,8 @@ public class ItemDocument {
     @Field(type = FieldType.Double)
     private BigDecimal originalPrice;
 
-    @Field(type = FieldType.Integer)
-    private Integer categoryId;
+    @Field(type = FieldType.Long)
+    private Long categoryId;
 
     private String cover;
 

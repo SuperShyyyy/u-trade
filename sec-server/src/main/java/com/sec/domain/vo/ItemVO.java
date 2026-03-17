@@ -16,7 +16,7 @@ public class ItemVO {
     private String description;      // 描述
     private Long categoryId;         // 分类ID
     private BigDecimal originalPrice;// 原价
-    private BigDecimal Price;// 原价
+    private BigDecimal price;        // 当前价格
     private String cover;            // 封面图片
     private List<String> images;     // 图片列表
     private Integer status;          // 商品状态（0下架 1上架 2审核中 -1已售出）
