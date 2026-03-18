@@ -648,17 +648,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Scheduled(cron = "0 */3 * * * ?") // 3分钟一次
     public void scanRedisAutoConfirm() {
+        log.info("========== 订单自动确认任务开始 [{}] ==========", LocalDateTime.now());
         String zsetKey = "order:auto_confirm:queue";
         long nowSeconds = System.currentTimeMillis() / 1000;
 
         // 1. 取出最多 500 条到期的订单 (避免一次处理太多阻塞)
         Set<String> expiredOrderIds = redisTemplate.opsForZSet()
                 .rangeByScore(zsetKey, 0, nowSeconds, 0, 500);
-
+        log.info("Redis ZSet 中到期订单数: {}", expiredOrderIds == null ? 0 : expiredOrderIds.size());
         if (expiredOrderIds == null || expiredOrderIds.isEmpty()) {
+            log.info("没有到期订单，本次任务结束");
             return;
         }
-
+        int successCount = 0;
+        int failCount = 0;
+        int skipCount = 0;
+        log.info("开始处理 {} 个到期订单", expiredOrderIds.size());
         for (String idStr : expiredOrderIds) {
             Long orderId = Long.valueOf(idStr);
 
@@ -667,17 +672,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             Long removed = redisTemplate.opsForZSet().remove(zsetKey, idStr);
 
             if (removed != null && removed > 0) {
+                log.debug("抢到订单处理权: {}", orderId);
                 try {
                     //创建代理对象调用自身
+
                     OrderServiceImpl proxy = applicationContext.getBean(OrderServiceImpl.class);
                     proxy.processSingleOrderConfirm(orderId);
+                    log.info("订单 {} 自动确认成功", orderId);
+                    successCount++;
                 } catch (Exception e) {
                     log.error("Redis 扫描任务处理订单 {} 失败，将在下次 DB 兜底中重试", orderId, e);
-                    // 可选：如果失败，可以重新加回 ZSet (带一点延迟)，或者直接放弃让 DB 兜底
+                    failCount++;
+                    // 可选：如果失败，可以重新加回 ZSet 或者直接放弃让 DB 兜底
                     // 最简单策略：放弃，让 30min 的 DB 兜底任务去捞
                 }
+            } else {
+                skipCount++;
+                log.debug("订单 {} 已被其他实例处理，跳过", orderId);
             }
         }
+        log.info("========== 订单自动确认任务结束 [{}] 成功:{} 失败:{} 跳过:{} ==========",
+                LocalDateTime.now(), successCount, failCount, skipCount);
+
     }
 
     private void clearOrderCache(Order order) {
@@ -711,8 +727,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
   @Scheduled(cron = "0 */30 * * * ?")
     public void autoConfirmDbCompensation() {
-        // 1. 给 Redis 留足时间：查询发货超过 7 天 + 30 分钟的订单
-        LocalDateTime thresholdTime = LocalDateTime.now().minusDays(7).minusMinutes(30);
+        // 1. 给 Redis 留足时间：查询发货超过 7 天
+        LocalDateTime thresholdTime = LocalDateTime.now().minusDays(7);
 
         List<Order> orders = lambdaQuery()
                 .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
@@ -722,7 +738,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         if (orders.isEmpty()) return;
 
-        // 2. 循环处理，彻底告别大事务
+        // 2. 循环处理
         for (Order order : orders) {
             try {
                 // 通过 Spring 代理对象调用
@@ -733,7 +749,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }
         }
 
-        // 3. 清理 Redis 残留（可选，双重保险）
+        // 3. 清理 Redis 残留
         List<String> orderIdsStr = orders.stream().map(o -> String.valueOf(o.getId())).toList();
         redisTemplate.opsForZSet().remove("order:auto_confirm:queue", orderIdsStr.toArray());
     }

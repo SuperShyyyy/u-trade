@@ -1,4 +1,7 @@
 spring:
+  task:
+    scheduling:
+      enabled: true
   data:
     redis:
       host: 192.168.150.101

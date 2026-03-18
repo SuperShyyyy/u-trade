@@ -16,5 +16,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/admin-logs")
 public class AdminLogController {
-
+    //todo 管理员操作日志
 }

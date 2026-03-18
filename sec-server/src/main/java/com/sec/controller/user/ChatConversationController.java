@@ -16,5 +16,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/user/chat-conversation")
 public class ChatConversationController {
-
+    //todo 聊天功能
 }
