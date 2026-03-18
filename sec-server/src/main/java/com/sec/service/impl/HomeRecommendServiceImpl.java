@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -30,7 +31,7 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
     private static final String CACHE_KEY = "recommend:top1000";
     private static final int CANDIDATE_SIZE = 1000;          // 候选商品数
     private static final int CACHE_EXPIRE_MINUTES = 10;      // 缓存过期时间（比定时任务间隔长）
-    private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
+    private static final ZoneId SYSTEM_ZONE = ZoneId.of("Asia/Shanghai");
 
     // ========== 推荐算法参数 ==========
     private static final double K1 = 100.0;
@@ -44,12 +45,12 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
      */
     @PostConstruct
     public void initCache() {
-        log.info("🚀 应用启动，预热推荐缓存...");
+        log.info("应用启动，预热推荐缓存...");
         try {
             refreshRecommendCache();
-            log.info("✅ 推荐缓存预热完成");
+            log.info("推荐缓存预热完成");
         } catch (Exception e) {
-            log.error("❌ 推荐缓存预热失败", e);
+            log.error("推荐缓存预热失败", e);
         }
     }
 
@@ -58,7 +59,7 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
      */
     @Scheduled(cron = "0 */5 * * * ?")
     public void refreshRecommendCache() {
-        log.info("⏰ 开始刷新推荐缓存...");
+        log.info("开始刷新推荐缓存...");
         long startTime = System.currentTimeMillis();
 
         try {
@@ -68,15 +69,13 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
             }
 
             List<ItemVO> sortedList = calculateAndSort(itemList);
-
-            // ✅ 使用 String 存储 JSON 序列化后的列表
             redisTemplate.opsForValue().set(CACHE_KEY, sortedList, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
 
             long costTime = System.currentTimeMillis() - startTime;
-            log.info("✅ 推荐缓存刷新完成，商品数: {}, 耗时: {}ms", sortedList.size(), costTime);
+            log.info("推荐缓存刷新完成，商品数: {}, 耗时: {}ms", sortedList.size(), costTime);
 
         } catch (Exception e) {
-            log.error("❌ 推荐缓存刷新失败", e);
+            log.error("推荐缓存刷新失败", e);
         }
     }
 
@@ -88,20 +87,35 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
     public PageDTO<ItemVO> pageQueryRecommendItem(int page, int pageSize) {
         long startTime = System.currentTimeMillis();
 
-        // 1. 从 Redis 获取完整列表
+        // 1. 从 Redis 获取
         List<ItemVO> allList = getCachedRecommendList();
 
+        // 2. 缓存为空，直接降级
         if (allList == null || allList.isEmpty()) {
-            // 2. 缓存为空，降级处理（直接查数据库）
-            log.warn("⚠️ 缓存为空，降级查询数据库");
+            log.warn("推荐缓存为空，降级走数据库实时查询 page = {} ，pageSize = {}", page, pageSize);
             return fallbackQuery(page, pageSize);
         }
 
-        // 3. 内存分页
-        PageDTO<ItemVO> result = paginate(allList, page, pageSize);
+        // 3. 内存分页与打散
+        List<ItemVO> processedList = allList;
+        if (page == 1 && allList.size() > 1) {
+            int shuffleRange = Math.min(30, allList.size());
 
+            // 前 N 条单独复制并打乱
+            List<ItemVO> topN = new ArrayList<>(allList.subList(0, shuffleRange));
+            Collections.shuffle(topN);
+
+            // 重组列表
+            processedList = new ArrayList<>(topN);
+            if (allList.size() > shuffleRange) {
+                processedList.addAll(allList.subList(shuffleRange, allList.size()));
+            }
+        }
+
+        // 4. 分页返回
+        PageDTO<ItemVO> result = paginate(processedList, page, pageSize);
         long costTime = System.currentTimeMillis() - startTime;
-        log.debug("📊 推荐查询完成，页码: {}, 耗时: {}ms", page, costTime);
+        log.debug("推荐查询完成，页码: {}, 耗时: {}ms", page, costTime);
 
         return result;
     }
