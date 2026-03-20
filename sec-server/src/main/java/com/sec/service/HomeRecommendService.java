@@ -5,4 +5,6 @@ import com.sec.result.PageDTO;
 
 public interface HomeRecommendService {
     PageDTO<ItemVO> pageQueryRecommendItem(int page, int pageSize);
+
+    void refreshRecommendCache();
 }

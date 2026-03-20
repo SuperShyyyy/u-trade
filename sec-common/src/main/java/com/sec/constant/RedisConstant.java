@@ -37,6 +37,9 @@ public class RedisConstant {
 
     //商品缓存
     public static final String ITEM_DETAIL = "item:detail:";
+    public static final Long ITEM_TTL = 30L;
+    public static final String ITEM_VIEW_COUNT = "item:view:";
+    public static final String ITEM_VIEW_IDS = "item:view:ids";
 
     //卖家查询商品列表 分页
     public static final String ITEM_LIST_SELLER = "item:list:seller:";  // + userId: + page: + size:
@@ -49,6 +52,7 @@ public class RedisConstant {
 
     //搜索记录
     public static final String HISTORY_SEARCH = "history:search:";
+
 
 
     //redis自动确认收货

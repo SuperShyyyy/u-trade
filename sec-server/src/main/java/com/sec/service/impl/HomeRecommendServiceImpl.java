@@ -1,5 +1,6 @@
 package com.sec.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sec.domain.po.Item;
 import com.sec.domain.vo.ItemVO;
 import com.sec.mapper.ItemMapper;
@@ -10,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -26,6 +26,7 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
 
     private final ItemMapper itemMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     // ========== 缓存配置 ==========
     private static final String CACHE_KEY = "recommend:top1000";
@@ -54,28 +55,36 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
         }
     }
 
-    /**
-     * 定时任务：每5分钟刷新推荐缓存
-     */
-    @Scheduled(cron = "0 */5 * * * ?")
+
     public void refreshRecommendCache() {
-        log.info("开始刷新推荐缓存...");
-        long startTime = System.currentTimeMillis();
+        List<Item> itemList = itemMapper.selectWithSellerCredit(CANDIDATE_SIZE);
+        if (itemList == null || itemList.isEmpty()) {
+            return;
+        }
 
-        try {
-            List<Item> itemList = itemMapper.selectWithSellerCredit(CANDIDATE_SIZE);
-            if (itemList == null || itemList.isEmpty()) {
-                return;
+        // 1. 计算并排序
+        List<ItemVO> sortedList = calculateAndSort(itemList);
+
+        // 2. 【关键修复】在存入缓存前打散头部数据，保证分页的一致性
+        if (sortedList.size() > 1) {
+            int shuffleRange = Math.min(30, sortedList.size());
+            List<ItemVO> topN = new ArrayList<>(sortedList.subList(0, shuffleRange));
+            Collections.shuffle(topN); // 打散前N条
+
+            // 替换原列表的前N条
+            for (int i = 0; i < shuffleRange; i++) {
+                sortedList.set(i, topN.get(i));
             }
-
-            List<ItemVO> sortedList = calculateAndSort(itemList);
-            redisTemplate.opsForValue().set(CACHE_KEY, sortedList, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
-
-            long costTime = System.currentTimeMillis() - startTime;
-            log.info("推荐缓存刷新完成，商品数: {}, 耗时: {}ms", sortedList.size(), costTime);
-
+        }
+        try {
+            redisTemplate.opsForValue().set(
+                    CACHE_KEY,
+                    objectMapper.writeValueAsString(sortedList),
+                    CACHE_EXPIRE_MINUTES,
+                    TimeUnit.MINUTES
+            );
         } catch (Exception e) {
-            log.error("推荐缓存刷新失败", e);
+            log.error("缓存写入失败", e);
         }
     }
 
@@ -86,7 +95,8 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
     @Override
     public PageDTO<ItemVO> pageQueryRecommendItem(int page, int pageSize) {
         long startTime = System.currentTimeMillis();
-
+        if (page < 1) page = 1;
+        if (pageSize <= 0) pageSize = 10;
         // 1. 从 Redis 获取
         List<ItemVO> allList = getCachedRecommendList();
 
@@ -95,25 +105,8 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
             log.warn("推荐缓存为空，降级走数据库实时查询 page = {} ，pageSize = {}", page, pageSize);
             return fallbackQuery(page, pageSize);
         }
-
+        PageDTO<ItemVO> result = paginate(allList, page, pageSize);
         // 3. 内存分页与打散
-        List<ItemVO> processedList = allList;
-        if (page == 1 && allList.size() > 1) {
-            int shuffleRange = Math.min(30, allList.size());
-
-            // 前 N 条单独复制并打乱
-            List<ItemVO> topN = new ArrayList<>(allList.subList(0, shuffleRange));
-            Collections.shuffle(topN);
-
-            // 重组列表
-            processedList = new ArrayList<>(topN);
-            if (allList.size() > shuffleRange) {
-                processedList.addAll(allList.subList(shuffleRange, allList.size()));
-            }
-        }
-
-        // 4. 分页返回
-        PageDTO<ItemVO> result = paginate(processedList, page, pageSize);
         long costTime = System.currentTimeMillis() - startTime;
         log.debug("推荐查询完成，页码: {}, 耗时: {}ms", page, costTime);
 
@@ -124,7 +117,12 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
      * 从 Redis 获取缓存列表
      */
     private List<ItemVO> getCachedRecommendList() {
-        return (List<ItemVO>) redisTemplate.opsForValue().get(CACHE_KEY);
+        Object obj = redisTemplate.opsForValue().get(CACHE_KEY);
+        if (obj == null) {
+            return null;
+        }
+
+        return (List<ItemVO>) obj;
     }
 
     /**
@@ -190,8 +188,8 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
         long diffSeconds = Math.max(0, currentTimeSeconds - createTimeSeconds);
         double hourDiff = diffSeconds / 3600.0;
 
-        int viewCount = item.getViewCount() != null ? item.getViewCount() : 0;
-        int wantCount = item.getWantCount() != null ? item.getWantCount() : 0;
+        Long viewCount = item.getViewCount() != null ? item.getViewCount() : 0;
+        Long wantCount = item.getWantCount() != null ? item.getWantCount() : 0;
         int credit = item.getSellerCreditScore() != null ? item.getSellerCreditScore() : 0;
 
         double qualityScore = (K2 * viewCount) + (K3 * wantCount) + (K4 * credit);

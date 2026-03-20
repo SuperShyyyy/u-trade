@@ -59,9 +59,9 @@ public class Item implements Serializable {
     @ApiModelProperty(value = "审核拒绝理由")
     private String rejectReason;
 
-    private Integer viewCount;
+    private Long viewCount;
 
-    private Integer wantCount;
+    private Long wantCount;
 
     private Integer isDeleted;
 

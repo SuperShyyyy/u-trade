@@ -4,6 +4,7 @@ import com.sec.domain.po.Item;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -19,4 +20,7 @@ import java.util.List;
 public interface ItemMapper extends BaseMapper<Item> {
 
     List<Item> selectWithSellerCredit(@Param("limit") int limit);
+
+    @Update("UPDATE item SET view_count = view_count + #{count} WHERE id = #{itemId}")
+    void incrementViewCount(@Param("itemId") Long itemId, @Param("count") Long count);
 }

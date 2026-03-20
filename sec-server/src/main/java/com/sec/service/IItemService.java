@@ -24,4 +24,6 @@ public interface IItemService extends IService<Item> {
     PageDTO<ItemVO> pageQueryItemsBySellerId(Long id,int page,int pageSize);
 
     PageDTO<ItemVO> searchItems(String keyword, int page, int pageSize);
+
+    ItemVO getItemById(Long id);
 }

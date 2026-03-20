@@ -64,4 +64,6 @@ public interface IOrderService extends IService<Order> {
     ShipmentVO queryShipmentByOrderId(Long orderId);
 
     void cancelOrderInternal(Long orderId);
+
+    void processSingleOrderConfirm(Long orderId);
 }

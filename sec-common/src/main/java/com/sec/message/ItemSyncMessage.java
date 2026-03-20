@@ -30,8 +30,8 @@ public class ItemSyncMessage implements Serializable {
     private String images;
     private Integer status;
     private Integer auditStatus;
-    private Integer viewCount;
-    private Integer wantCount;
+    private Long viewCount;
+    private Long wantCount;
     private Integer isDeleted;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -43,8 +43,8 @@ public class ItemSyncMessage implements Serializable {
      * 操作类型枚举
      */
     public enum OperationType {
-        ADD,      // 新增
-        UPDATE,   // 更新
-        DELETE    // 删除
+        ADD,
+        UPDATE,
+        DELETE
     }
 }

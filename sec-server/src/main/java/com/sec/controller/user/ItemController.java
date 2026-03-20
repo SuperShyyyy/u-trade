@@ -66,4 +66,10 @@ public class ItemController {
         PageDTO<ItemVO> dto = itemService.pageQueryItemsBySellerId(id, page, pageSize);
         return Result.success(dto);
     }
+
+    @ApiOperation("通过id查询单个商品详情")
+    @GetMapping("/{id}")
+    public Result<ItemVO> getItemById(@PathVariable Long id){
+        return Result.success(itemService.getItemById(id));
+    }
 }

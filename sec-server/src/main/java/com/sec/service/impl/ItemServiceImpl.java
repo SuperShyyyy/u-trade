@@ -1,10 +1,13 @@
 package com.sec.service.impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sec.constant.ItemAuditStatusConstant;
 import com.sec.constant.ItemStatusConstant;
+import com.sec.constant.RedisConstant;
 import com.sec.context.BaseContext;
 import com.sec.domain.dto.ItemDTO;
 import com.sec.domain.es.ItemDocument;
@@ -16,16 +19,17 @@ import com.sec.mapper.ItemMapper;
 import com.sec.mq.sender.ItemEsSender;
 import com.sec.result.PageDTO;
 import com.sec.service.IItemService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sec.service.ItemEsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -38,20 +42,22 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
 
     private final ItemEsService itemEsService;
     private final ItemEsSender itemEsSender;
-
+    private final StringRedisTemplate stringRedisTemplate;
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateItemStatus(Long id, Integer status) {
         Long userId = BaseContext.getCurrentId();
         if (id == null) {
-            throw new BusinessException("未查询到商品，无法修改");
+            throw new BusinessException("参数为空，无法修改");
         }
 
-        Item item = lambdaQuery().eq(Item::getId, id).one();
+        Item item = this.getById(id);
         if (item == null) {
             throw new BusinessException("未查询到商品，无法修改");
         }
-
+        if(!item.getSellerId().equals(userId)){
+            throw new PermissionDeniedException("只能修改自己上架的商品");
+        }
         if (!Set.of(ItemStatusConstant.ON_SALE, ItemStatusConstant.OFF_SALE).contains(status)) {
             throw new BusinessException("只能修改为上架或下架状态");
         }
@@ -62,24 +68,22 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
 
         // 更新数据库
         Item update = new Item();
-        update.setSellerId(userId);
         update.setId(id);
         update.setStatus(status);
         update.setUpdateTime(LocalDateTime.now());
         this.updateById(update);
 
-        // 获取最新数据
+        // 获取最新数据（用于发送MQ）
         Item updatedItem = this.getById(id);
 
-        // 使用发送器发送 MQ 消息
-        if (status == ItemStatusConstant.ON_SALE) {
-            itemEsSender.sendUpdateMessage(updatedItem);
-        } else {
-            // 下架时，通知 ES 删除或更新状态
+        if (updatedItem != null) {
             itemEsSender.sendUpdateMessage(updatedItem);
         }
 
-        // TODO: 删除或更新缓存
+        // 删除缓存（先更新数据库，再删除缓存）
+        String cacheKey = RedisConstant.ITEM_DETAIL + id;
+        stringRedisTemplate.delete(cacheKey);
+
         log.info("商品状态更新完成，ItemId: {}, NewStatus: {}", id, status);
     }
 
@@ -92,7 +96,6 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
 
         Long userId = BaseContext.getCurrentId();
         Item item = new Item();
-        // 手动设置属性
         item.setTitle(itemDTO.getTitle());
         item.setDescription(itemDTO.getDescription());
         item.setPrice(itemDTO.getOriginalPrice());
@@ -100,8 +103,8 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         item.setCategoryId(itemDTO.getCategoryId());
 
         item.setSellerId(userId);
-        item.setWantCount(0);
-        item.setViewCount(0);
+        item.setWantCount(0L);
+        item.setViewCount(0L);
         item.setCreateTime(LocalDateTime.now());
         item.setUpdateTime(LocalDateTime.now());
         item.setStatus(ItemStatusConstant.ON_SALE);
@@ -113,19 +116,27 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             item.setCover(itemDTO.getImages()[0]);
         }
 
-        // 保存数据库
         this.save(item);
-
-        // 使用发送器发送 MQ 消息
         itemEsSender.sendAddMessage(item);
 
-        // TODO: 缓存操作
+        ItemVO vo = convertToVO(item);
+        String cacheKey = RedisConstant.ITEM_DETAIL + item.getId();
+        stringRedisTemplate.opsForValue().set(
+                cacheKey,
+                JSON.toJSONString(vo),
+                RedisConstant.ITEM_TTL,
+                TimeUnit.MINUTES
+        );
+
         log.info("商品新增完成，ItemId: {}", item.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteItem(Long id) {
+        if(id==null){
+            throw new BusinessException("参数为空，无法删除");
+        }
         Long userId = BaseContext.getCurrentId();
         Item item = this.getById(id);
 
@@ -137,19 +148,16 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             throw new PermissionDeniedException("非当前用户售卖商品，无法删除");
         }
 
-        // 逻辑删除
         item.setIsDeleted(1);
         item.setUpdateTime(LocalDateTime.now());
         this.updateById(item);
 
-        // 使用发送器发送 MQ 消息
         itemEsSender.sendDeleteMessage(item);
 
-        // TODO: 缓存操作
+        String key = RedisConstant.ITEM_DETAIL + item.getId();
+        stringRedisTemplate.delete(key);
         log.info("商品删除完成，ItemId: {}", id);
     }
-
-    // ==================== 查询方法保持不变 ====================
 
     @Override
     public PageDTO<ItemVO> pageQueryItemsBySellerId(Long id, int page, int pageSize) {
@@ -184,6 +192,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         return PageDTO.of(voPage);
     }
 
+
     @Override
     public PageDTO<ItemVO> searchItems(String keyword, int page, int pageSize) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -206,10 +215,8 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
 
         try {
             // 调用 ES 服务搜索
-          org.springframework.data.domain.Page<ItemDocument> esPage =
+            org.springframework.data.domain.Page<ItemDocument> esPage =
                     itemEsService.searchByTitle(keyword, page, pageSize);
-
-            // 将 ItemDocument 转换为 ItemVO
             List<ItemVO> voList = esPage.getContent().stream().map(doc -> {
                 ItemVO vo = new ItemVO();
                 vo.setId(doc.getId());
@@ -220,7 +227,6 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
                 vo.setPrice(doc.getPrice());
                 vo.setOriginalPrice(doc.getOriginalPrice());
                 vo.setCover(doc.getCover());
-                // 处理图片字符串转 List
                 if (doc.getImages() != null && !doc.getImages().isEmpty()) {
                     vo.setImages(List.of(doc.getImages().split(",")));
                 }
@@ -245,6 +251,91 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         } catch (Exception e) {
             log.error("商品搜索失败，keyword: {}, Error: {}", keyword, e.getMessage(), e);
             throw new BusinessException("搜索服务异常，请稍后重试");
+        }
+    }
+
+
+    @Override
+    public ItemVO getItemById(Long id) {
+        if (id == null) {
+            throw new BusinessException("参数为空，无法查询");
+        }
+        String detailKey = RedisConstant.ITEM_DETAIL + id;
+        String viewKey = RedisConstant.ITEM_VIEW_COUNT + id;
+        stringRedisTemplate.opsForValue().increment(viewKey);
+        stringRedisTemplate.opsForSet().add(RedisConstant.ITEM_VIEW_IDS, String.valueOf(id));
+        stringRedisTemplate.expire(viewKey, 1, TimeUnit.DAYS);
+
+        String json = stringRedisTemplate.opsForValue().get(detailKey);
+        if (json != null) {
+            if ("null".equals(json)) {
+                return null;
+            }
+            ItemVO vo = JSON.parseObject(json, ItemVO.class);
+            vo.setViewCount(vo.getViewCount() + getRedisIncrement(viewKey));
+            return vo;
+        }
+
+        // 查数据库
+        Item item = this.getById(id);
+
+        // 防穿透 3min
+        if (item == null) {
+            stringRedisTemplate.opsForValue().set(detailKey, "null", 3, TimeUnit.MINUTES);
+            return null;
+        }
+
+        // 只转换一次VO
+        ItemVO baseVo = convertToVO(item);
+        String baseJson = JSON.toJSONString(baseVo);
+
+        // 写入缓存
+        stringRedisTemplate.opsForValue().set(
+                detailKey,
+                baseJson,
+                RedisConstant.ITEM_TTL,
+                TimeUnit.MINUTES
+        );
+        long base = item.getViewCount() == null ? 0 : item.getViewCount();
+        long increment = getRedisIncrement(viewKey);
+        baseVo.setViewCount(base + increment);
+
+        return baseVo;
+    }
+
+    private ItemVO convertToVO(Item item) {
+        if (item == null) return null;
+        ItemVO vo = new ItemVO();
+        vo.setId(item.getId());
+        vo.setTitle(item.getTitle());
+        vo.setDescription(item.getDescription());
+        vo.setPrice(item.getPrice());
+        vo.setOriginalPrice(item.getOriginalPrice());
+        vo.setCover(item.getCover());
+        vo.setSellerId(item.getSellerId());
+        vo.setCategoryId(item.getCategoryId());
+        vo.setStatus(item.getStatus());
+        vo.setAuditStatus(item.getAuditStatus());
+        vo.setCreateTime(item.getCreateTime());
+        vo.setUpdateTime(item.getUpdateTime());
+        vo.setWantCount(item.getWantCount());
+        vo.setViewCount(item.getViewCount());
+        if (item.getImages() != null && !item.getImages().isEmpty()) {
+            vo.setImages(List.of(item.getImages().split(",")));
+        }
+        return vo;
+    }
+
+    private long getRedisIncrement(String viewKey) {
+        String countStr = stringRedisTemplate.opsForValue().get(viewKey);
+        if (countStr == null || countStr.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Long.parseLong(countStr);
+        } catch (NumberFormatException e) {
+            log.warn("Redis浏览量数据格式异常: {}", countStr);
+            return 0;
         }
     }
 }

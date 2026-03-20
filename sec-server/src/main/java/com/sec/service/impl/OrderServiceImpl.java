@@ -36,6 +36,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -64,8 +66,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final ShipmentMapper shipmentMapper;
     private final IShipmentService shipmentService;
     private final IUserAddressService userAddressService;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final StringRedisTemplate stringRedisTemplate;
-    private final RedisTemplate redisTemplate ;
     private final IItemService itemService;
     private final IUserWalletService userWalletService;
     private final OrderSettlementSender orderSettlementSender;
@@ -370,7 +372,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Transactional
     @Override
-    public void userCancelById(Long orderId) throws Exception {
+    public void userCancelById(Long orderId)  {
         Long userId = BaseContext.getCurrentId();
         Order order = lambdaQuery()
                 .eq(Order::getId, orderId)
@@ -379,7 +381,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order == null) {
             throw new BusinessException("订单不存在，无法取消");
         }
-        // 核心复用
         cancelOrderInternal(orderId);
     }
 
@@ -412,9 +413,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                     .update();
             if (!released) {
                 log.warn("自动取消订单成功，但商品状态释放失败！订单ID: {}, 商品ID: {}", orderId, order.getItemId());
-                // 这里可以选择抛出异常触发事务回滚，或者记录失败后通过补偿任务处理
-                // 为了保持数据一致性，建议抛出异常，让订单回滚，或者引入补偿机制
-                throw new BusinessException("订单已取消，但商品上架失败，需人工介入");
             }
         }
 
@@ -478,7 +476,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         clearOrderCache(order);
 
         // 5. 删除发货时在redis创建的过期时间
-        redisTemplate.opsForZSet().remove("order:auto_confirm:queue", String.valueOf(orderId));
+        stringRedisTemplate.opsForZSet().remove("order:auto_confirm:queue", String.valueOf(orderId));
 
         // 6. 资金结算 调用 WalletService
         userWalletService.transferFrozenToSeller(
@@ -494,115 +492,64 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void shipment(Long orderId, String logisticsCompany, String trackingNumber) {
-        // 1. 获取当前卖家 ID
         Long sellerId = BaseContext.getCurrentId();
-        if (sellerId == null) {
-            throw new BusinessException("用户未登录");
-        }
-
-        // 2. 查询订单（用于后续校验）
+        LocalDateTime now = LocalDateTime.now();
+        // 1.校验权限
         Order dbOrder = orderMapper.selectById(orderId);
-        if (dbOrder == null) {
-            throw new BusinessException("订单不存在");
-        }
-        if (!dbOrder.getSellerId().equals(sellerId)) {
-            throw new BusinessException("无权操作该订单");
+        if (dbOrder == null || !dbOrder.getSellerId().equals(sellerId)) {
+            throw new BusinessException("订单不存在或无权操作");
         }
 
-        // 3. 状态校验
-        if (!OrderStatusConstant.PAID.equals(dbOrder.getStatus())) {
-            if (OrderStatusConstant.SHIPPED.equals(dbOrder.getStatus())) {
-                log.info("订单 {} 已发货，本次操作将更新物流信息", orderId);
-            } else {
-                throw new BusinessException("订单状态不可发货（当前状态：" + dbOrder.getStatus() + "）");
-            }
+        // 2. 状态校验
+        if (!OrderStatusConstant.PAID.equals(dbOrder.getStatus()) &&
+                !OrderStatusConstant.SHIPPED.equals(dbOrder.getStatus())) {
+            throw new BusinessException("当前状态不可发货");
         }
 
-        // 4. 更新订单状态
-        Order updateOrder = new Order();
-        updateOrder.setId(orderId);
-        updateOrder.setStatus(OrderStatusConstant.SHIPPED);
-
-        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(Order::getId, orderId)
+        // 3. 更新订单状态
+        boolean orderUpdated = lambdaUpdate()
+                .eq(Order::getId, orderId)
                 .eq(Order::getSellerId, sellerId)
-                .in(Order::getStatus, OrderStatusConstant.PAID, OrderStatusConstant.SHIPPED);
+                .in(Order::getStatus, OrderStatusConstant.PAID, OrderStatusConstant.SHIPPED)
+                .set(Order::getStatus, OrderStatusConstant.SHIPPED)
+                .set(Order::getShippedAt, now)
+                .update();
 
-        int orderUpdateCount = orderMapper.update(updateOrder, updateWrapper);
-        if (orderUpdateCount == 0) {
-            Order freshOrder = orderMapper.selectById(orderId);
-            if (freshOrder == null) {
-                throw new BusinessException("订单不存在");
+        if (!orderUpdated) {
+            throw new BusinessException("订单状态已变更，请刷新重试");
+        }
+
+        Shipment shipment = new Shipment()
+                .setOrderId(orderId)
+                .setSellerId(sellerId)
+                .setCompany(logisticsCompany)
+                .setTrackingNo(trackingNumber)
+                .setStatus(ShipmentStatusConstant.SHIPPED)
+                .setUpdateTime(now);
+
+        shipmentService.saveOrUpdate(shipment, new LambdaQueryWrapper<Shipment>()
+                .eq(Shipment::getOrderId, orderId));
+
+        // 5.注册事务同步：只有 DB 提交成功，才操作 Redis
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    // 写入自动确认队列
+                    String zsetKey = RedisConstant.AUTO_CONFIRM_KEY;
+                    long expireTimestamp = System.currentTimeMillis() / 1000 + 7 * 24 * 3600;
+                    stringRedisTemplate.opsForZSet().add(zsetKey, String.valueOf(orderId), expireTimestamp);
+                    // 清理缓存
+                    clearOrderCache(dbOrder);
+                    log.info("订单 {} 事务提交成功，同步更新 Redis 数据", orderId);
+                } catch (Exception e) {
+                    log.error("订单 {} 事务提交后 Redis 操作异常", orderId, e);
+                }
             }
-            if (!freshOrder.getSellerId().equals(sellerId)) {
-                throw new BusinessException("无权操作该订单");
-            }
-            throw new BusinessException("订单状态已变更，无法发货（当前状态：" + freshOrder.getStatus() + "）");
-        }
+        });
 
-        // 5. 处理物流信息（新增或更新）
-        Shipment existingShipment = shipmentMapper.selectOne(
-                new LambdaQueryWrapper<Shipment>()
-                        .eq(Shipment::getOrderId, orderId)
-                        .eq(Shipment::getSellerId, sellerId)
-        );
-
-        int shipmentOperateCount;
-        if (existingShipment == null) {
-            // 新增物流记录
-            Shipment shipment = new Shipment();
-            shipment.setOrderId(orderId);
-            shipment.setSellerId(sellerId);
-            shipment.setStatus(ShipmentStatusConstant.SHIPPED);
-            shipment.setCompany(logisticsCompany);
-            shipment.setTrackingNo(trackingNumber);
-            shipment.setCreatedAt(LocalDateTime.now());
-            shipment.setUpdateTime(LocalDateTime.now());
-            shipmentOperateCount = shipmentMapper.insert(shipment);
-        } else {
-            // 更新已有物流记录
-            Shipment updateShipment = new Shipment();
-            updateShipment.setCompany(logisticsCompany);
-            updateShipment.setTrackingNo(trackingNumber);
-            updateShipment.setStatus(ShipmentStatusConstant.SHIPPED);
-            updateShipment.setUpdateTime(LocalDateTime.now());
-
-            LambdaUpdateWrapper<Shipment> shipmentUpdateWrapper = new LambdaUpdateWrapper<>();
-            shipmentUpdateWrapper.eq(Shipment::getOrderId, orderId)
-                    .eq(Shipment::getSellerId, sellerId);
-            shipmentOperateCount = shipmentMapper.update(updateShipment, shipmentUpdateWrapper);
-        }
-
-        if (shipmentOperateCount == 0) {
-            throw new BusinessException("物流信息保存失败");
-        }
-
-        // 6.写入 Redis ZSet 延迟队列（7 天后自动确认收货）
-        try {
-            String zsetKey = "order:auto_confirm:queue";
-            // 过期时间 = 当前时间 + 7 天
-            //redis扫过期时间 ： 定时扫描 判断当前时间是否超过过期时间
-            long expireTimestamp = System.currentTimeMillis() / 1000 + 7 * 24 * 3600;
-            String orderIdStr = String.valueOf(orderId);
-            redisTemplate.opsForZSet().add(zsetKey, orderIdStr, expireTimestamp);
-            log.info("订单 {} 发货成功，已加入自动确认队列（过期时间：{}）",
-                    orderId, LocalDateTime.ofEpochSecond(expireTimestamp, 0, ZoneOffset.ofHours(8)));
-
-        } catch (Exception e) {
-            // Redis 写入失败不影响主流程，DB 兜底任务会处理
-            log.error("订单 {} 发货成功，但写入 Redis 延迟队列失败，将由 DB 兜底任务处理", orderId, e);
-        }
-
-        // 7. 清理订单缓存（传入完整订单对象）
-        try {
-            clearOrderCache(dbOrder);
-            log.info("订单 {} 缓存已清理", orderId);
-        } catch (Exception e) {
-            log.error("订单 {} 清理缓存失败", orderId, e);
-        }
-
-        log.info("订单 {} 发货完成，物流公司：{}，运单号：{}", orderId, logisticsCompany, trackingNumber);
-    }
+    log.info("订单 {} 发货 DB 操作完成，等待事务提交", orderId);
+}
 
     @Override
     public ShipmentVO queryShipmentByOrderId(Long orderId) {
@@ -614,10 +561,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         Shipment shipment = shipmentMapper.selectOne(queryWrapper);
 
         if (shipment == null) {
-            // 情况A：还没发货，自然没有物流信息。
-            // 根据业务需求，是抛异常还是返回空对象？
-            // 如果是“查询物流”接口，通常意味着用户认为已发货。
-            // 建议先查订单状态确认是否已发货
             Order order = orderMapper.selectById(orderId);
             if (order != null && OrderStatusConstant.SHIPPED.equals(order.getStatus())) {
                 throw new BusinessException("物流信息同步延迟，请稍后重试");
@@ -646,56 +589,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return shipmentVO;
     }
 
-    @Scheduled(cron = "0 */3 * * * ?") // 3分钟一次
-    public void scanRedisAutoConfirm() {
-        log.info("========== 订单自动确认任务开始 [{}] ==========", LocalDateTime.now());
-        String zsetKey = "order:auto_confirm:queue";
-        long nowSeconds = System.currentTimeMillis() / 1000;
-
-        // 1. 取出最多 500 条到期的订单 (避免一次处理太多阻塞)
-        Set<String> expiredOrderIds = redisTemplate.opsForZSet()
-                .rangeByScore(zsetKey, 0, nowSeconds, 0, 500);
-        log.info("Redis ZSet 中到期订单数: {}", expiredOrderIds == null ? 0 : expiredOrderIds.size());
-        if (expiredOrderIds == null || expiredOrderIds.isEmpty()) {
-            log.info("没有到期订单，本次任务结束");
-            return;
-        }
-        int successCount = 0;
-        int failCount = 0;
-        int skipCount = 0;
-        log.info("开始处理 {} 个到期订单", expiredOrderIds.size());
-        for (String idStr : expiredOrderIds) {
-            Long orderId = Long.valueOf(idStr);
-
-            // 2. 【关键】尝试从 ZSet 移除，作为“抢占锁”
-            // 如果 remove 返回 1，说明我抢到了；如果返回 0，说明可能被其他实例或兜底任务处理了
-            Long removed = redisTemplate.opsForZSet().remove(zsetKey, idStr);
-
-            if (removed != null && removed > 0) {
-                log.debug("抢到订单处理权: {}", orderId);
-                try {
-                    //创建代理对象调用自身
-
-                    OrderServiceImpl proxy = applicationContext.getBean(OrderServiceImpl.class);
-                    proxy.processSingleOrderConfirm(orderId);
-                    log.info("订单 {} 自动确认成功", orderId);
-                    successCount++;
-                } catch (Exception e) {
-                    log.error("Redis 扫描任务处理订单 {} 失败，将在下次 DB 兜底中重试", orderId, e);
-                    failCount++;
-                    // 可选：如果失败，可以重新加回 ZSet 或者直接放弃让 DB 兜底
-                    // 最简单策略：放弃，让 30min 的 DB 兜底任务去捞
-                }
-            } else {
-                skipCount++;
-                log.debug("订单 {} 已被其他实例处理，跳过", orderId);
-            }
-        }
-        log.info("========== 订单自动确认任务结束 [{}] 成功:{} 失败:{} 跳过:{} ==========",
-                LocalDateTime.now(), successCount, failCount, skipCount);
-
-    }
-
     private void clearOrderCache(Order order) {
 
         Set<String> keys = new HashSet<>();
@@ -720,91 +613,72 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
 
         if (!keys.isEmpty()) {
-            redisTemplate.delete(keys);
+            stringRedisTemplate.delete(keys);
             log.debug("清除订单缓存: {}", keys);
         }
     }
 
-  @Scheduled(cron = "0 */30 * * * ?")
-    public void autoConfirmDbCompensation() {
-        // 1. 给 Redis 留足时间：查询发货超过 7 天
-        LocalDateTime thresholdTime = LocalDateTime.now().minusDays(7);
-
-        List<Order> orders = lambdaQuery()
-                .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
-                .lt(Order::getUpdatedAt, thresholdTime)
-                .last("limit 200")
-                .list();
-
-        if (orders.isEmpty()) return;
-
-        // 2. 循环处理
-        for (Order order : orders) {
-            try {
-                // 通过 Spring 代理对象调用
-                OrderServiceImpl proxy = applicationContext.getBean(OrderServiceImpl.class);
-                proxy.processSingleOrderConfirm(order.getId());
-            } catch (Exception e) {
-                log.error("DB 兜底任务：订单 {} 自动确认异常，跳过等待下次扫描", order.getId(), e);
-            }
-        }
-
-        // 3. 清理 Redis 残留
-        List<String> orderIdsStr = orders.stream().map(o -> String.valueOf(o.getId())).toList();
-        redisTemplate.opsForZSet().remove("order:auto_confirm:queue", orderIdsStr.toArray());
-    }
-
     @Transactional(rollbackFor = Exception.class)
     public void processSingleOrderConfirm(Long orderId) {
-        // 1. 尝试更新订单状态 (行锁/乐观锁)
+        // 1. 更新订单状态
         boolean updated = lambdaUpdate()
                 .eq(Order::getId, orderId)
                 .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
                 .set(Order::getStatus, OrderStatusConstant.FINISHED)
                 .set(Order::getCompletedAt, LocalDateTime.now())
                 .update();
-
         if (!updated) {
             log.info("订单 {} 状态已变更或已处理，跳过", orderId);
             return;
         }
-
-        // 2. 更新物流表
+        // 2. 更新物流状态
         shipmentService.lambdaUpdate()
                 .eq(Shipment::getOrderId, orderId)
                 .eq(Shipment::getStatus, ShipmentStatusConstant.SHIPPED)
                 .set(Shipment::getStatus, ShipmentStatusConstant.FINISHED)
                 .set(Shipment::getDeliveredAt, LocalDateTime.now())
                 .update();
-
-        // 3. 组装结算消息
+        // 3. 查询订单信息
         Order order = orderMapper.selectById(orderId);
+
+        // 4. 构建消息
         OrderSettlementMessage msg = new OrderSettlementMessage(
-                order.getBuyerId(), order.getSellerId(), order.getTotalPrice(), order.getOrderNo()
+                order.getBuyerId(),
+                order.getSellerId(),
+                order.getTotalPrice(),
+                order.getOrderNo()
         );
         String messageId = order.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
         msg.setMessageId(messageId);
         msg.setTimestamp(System.currentTimeMillis());
-
-        // 4. 在当前数据库事务中 直接落库消息记录
+        // 5. 保存本地消息表
         MqMessageLog mqLog = new MqMessageLog();
         mqLog.setMessageId(messageId);
         mqLog.setExchange(RabbitMQConstant.EXCHANGE_ORDER_SETTLE_EXEC);
         mqLog.setRoutingKey(RabbitMQConstant.ROUTING_KEY_ORDER_SETTLE_EXEC);
         mqLog.setMessageBody(JSON.toJSONString(msg));
-        mqLog.setStatus(0); // 0-发送中
+        mqLog.setStatus(MqMessageLogStatus.SENDING);
         mqLog.setRetryCount(0);
-        mqMessageLogService.insert(mqLog);
-        // 缓存清理
+        mqLog.setCreateTime(LocalDateTime.now());
+        mqMessageLogService.save(mqLog);
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            orderSettlementSender.send(msg);
+                            log.info("订单 {} MQ发送成功 messageId={}", orderId, messageId);
+                        } catch (Exception e) {
+                            log.error("订单 {} MQ发送失败 messageId={}", orderId, messageId, e);
+                        }
+                    }
+                }
+        );
+
+        // 7. 清理缓存
         clearOrderCache(order);
 
-        mqMessageLogService.lambdaUpdate()
-                .eq(MqMessageLog::getMessageId, messageId)
-                .set(MqMessageLog::getStatus, 1) // 1-成功
-                .set(MqMessageLog::getUpdateTime, LocalDateTime.now())
-                .update();
-        orderSettlementSender.send(msg);
-
-        log.info("订单 {} 自动确认成功，本地消息表已记录", orderId);
+        log.info("订单 {} 自动确认完成（消息已入库，等待发送）", orderId);
     }
+
 }
