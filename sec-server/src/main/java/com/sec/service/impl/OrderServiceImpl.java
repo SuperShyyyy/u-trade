@@ -95,7 +95,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("宝贝已售出或正在被他人购买中，请稍后重试");
         }
         Item item = itemService.getById(itemId);
-
+        if (item == null) {
+            throw new BusinessException("商品不存在");
+        }
+        Long sellerId = item.getSellerId();
+        if (sellerId == null) {
+            throw new BusinessException("商品数据异常");
+        }
+        if (userId.equals(sellerId)) {
+            throw new BusinessException("不能购买自己的商品");
+        }
+        if (dto.getSellerId() != null && !dto.getSellerId().equals(sellerId)) {
+            throw new BusinessException("卖家信息与商品不一致");
+        }
         // 2. 获取价格和运费
         BigDecimal itemPrice = item.getPrice();
         BigDecimal shippingFee = (item.getIsFreeShipping() == 0) ? item.getShippingFee() : BigDecimal.ZERO;
@@ -110,7 +122,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         String orderNo = SerialNoUtil.generateOrderNo();
         Order order = new Order()
                 .setBuyerId(userId)
-                .setSellerId(dto.getSellerId())
+                .setSellerId(sellerId)
                 .setItemId(itemId)
                 .setPrice(itemPrice)
                 .setQuantity(1)

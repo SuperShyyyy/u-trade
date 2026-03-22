@@ -68,6 +68,8 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         return walletVO;
     }
 
+
+
     @Override
     public PageDTO<WalletLogVO> getWalletLog(WalletLogQueryDTO dto) {
         Long userId = BaseContext.getCurrentId();
@@ -247,14 +249,36 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         walletLogMapper.insert(log);
     }
 
-    @Transactional
-    @Override
-    public void freezeAmount(Long userId, BigDecimal amount, String orderNo) {
 
+    private UserWallet getOrCreateWallet(Long userId) {
         UserWallet wallet = userWalletMapper.selectOne(
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, userId)
         );
+        if (wallet == null) {
+            wallet = new UserWallet()
+                    .setUserId(userId)
+                    .setBalance(BigDecimal.ZERO)
+                    .setFrozenAmount(BigDecimal.ZERO)
+                    .setTotalIncome(BigDecimal.ZERO)
+                    .setTotalExpense(BigDecimal.ZERO)
+                    .setVersion(0);
+            this.save(wallet);
+        }
+        return wallet;
+    }
+
+
+    @Transactional
+    @Override
+    public void freezeAmount(Long userId, BigDecimal amount, String orderNo) {
+        /*
+         *
+        UserWallet wallet = userWalletMapper.selectOne(
+                Wrappers.<UserWallet>lambdaQuery()
+                        .eq(UserWallet::getUserId, userId)
+        );*/
+        UserWallet wallet = getOrCreateWallet(userId);
 
         if (wallet.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("余额不足");

@@ -1,8 +1,6 @@
 package com.sec.config;
 
-import com.sec.constant.RabbitMQConstant;
 import com.sec.service.IMqMessageLogService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -11,9 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@RequiredArgsConstructor
 public class RabbitMQConfig {
-    private final IMqMessageLogService mqMessageLogService;
     /**
      * JSON消息转换器
      */

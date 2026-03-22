@@ -2,9 +2,7 @@ package com.sec.mq.sender;
 
 import com.alibaba.fastjson2.JSON;
 import com.sec.constant.RabbitMQConstant;
-import com.sec.domain.po.MqMessageLog;
 import com.sec.message.OrderSettlementMessage;
-import com.sec.service.IMqMessageLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -13,8 +11,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.UUID;
 @Slf4j
 @Component
 @RequiredArgsConstructor

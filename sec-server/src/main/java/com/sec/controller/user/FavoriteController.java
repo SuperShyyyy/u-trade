@@ -1,6 +1,5 @@
 package com.sec.controller.user;
 
-
 import com.sec.domain.dto.FavoriteDTO;
 import com.sec.domain.vo.FavoriteVO;
 import com.sec.result.PageDTO;
@@ -11,9 +10,6 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import springfox.documentation.annotations.ApiIgnore;
-
-import javax.management.ValueExp;
 
 /**
  * <p>
