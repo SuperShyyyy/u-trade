@@ -26,6 +26,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -95,6 +96,10 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         }
 
         Long userId = BaseContext.getCurrentId();
+        //0是不包邮 //1为包邮
+        if(itemDTO.getIsFreeShipping()==1){
+            itemDTO.setShippingFee(new BigDecimal(0));
+        }
         Item item = new Item();
         item.setTitle(itemDTO.getTitle());
         item.setDescription(itemDTO.getDescription());
@@ -110,7 +115,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         item.setStatus(ItemStatusConstant.ON_SALE);
         item.setAuditStatus(ItemAuditStatusConstant.PASS_AUDIT);
         item.setIsDeleted(0);
-
+        item.setShippingFee(itemDTO.getShippingFee());
         if (itemDTO.getImages() != null && itemDTO.getImages().length > 0) {
             item.setImages(String.join(",", itemDTO.getImages()));
             item.setCover(itemDTO.getImages()[0]);

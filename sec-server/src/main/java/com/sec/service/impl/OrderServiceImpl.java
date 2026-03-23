@@ -82,21 +82,21 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
         Long userId = BaseContext.getCurrentId();
         Long itemId = dto.getItemId();
+        // 1.先用乐观锁 锁定商品
 
-        // ... (前面的商品锁定、价格计算、地址查询逻辑保持不变) ...
-        // 1. 乐观锁锁定商品
-        LambdaUpdateWrapper<Item> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(Item::getId, itemId)
-                .eq(Item::getStatus, ItemStatusConstant.ON_SALE)
-                .set(Item::getStatus, ItemStatusConstant.LOCKED)
-                .set(Item::getUpdateTime, LocalDateTime.now());
-        boolean isLocked = itemService.update(updateWrapper);
+        boolean isLocked = itemService.update(
+                new LambdaUpdateWrapper<Item>()
+                        .eq(Item::getId, itemId)
+                        .eq(Item::getStatus, ItemStatusConstant.ON_SALE)
+                        .set(Item::getStatus, ItemStatusConstant.LOCKED)
+                        .set(Item::getUpdateTime, LocalDateTime.now())
+        );
         if (!isLocked) {
             throw new BusinessException("宝贝已售出或正在被他人购买中，请稍后重试");
         }
         Item item = itemService.getById(itemId);
-        if (item == null) {
-            throw new BusinessException("商品不存在");
+        if (item == null ) {
+            throw new BusinessException("商品状态异常，请重试");
         }
         Long sellerId = item.getSellerId();
         if (sellerId == null) {
@@ -110,7 +110,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         // 2. 获取价格和运费
         BigDecimal itemPrice = item.getPrice();
-        BigDecimal shippingFee = (item.getIsFreeShipping() == 0) ? item.getShippingFee() : BigDecimal.ZERO;
+        BigDecimal shippingFee = (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
+                ? BigDecimal.ZERO
+                : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
 
         // 3. 查询地址
         UserAddress address = userAddressService.getById(dto.getAddressId());
