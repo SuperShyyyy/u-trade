@@ -22,8 +22,11 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String requestUri = request.getRequestURI();
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
 
+        String requestUri = request.getRequestURI();
         // 1. 静态资源与非控制器方法直接放行
         if (!(handler instanceof HandlerMethod)) {
             return true;
@@ -89,5 +92,10 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             response.setStatus(401);
             return false;
         }
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        BaseContext.remove();
     }
 }
