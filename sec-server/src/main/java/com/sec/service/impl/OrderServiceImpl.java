@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sec.constant.*;
 import com.sec.context.BaseContext;
+import com.sec.domain.dto.ItemSnapshotDTO;
 import com.sec.domain.dto.OrderPaymentDTO;
 import com.sec.domain.dto.OrderSubmitDTO;
 import com.sec.domain.po.*;
@@ -29,11 +30,8 @@ import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -41,7 +39,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -74,8 +71,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final ItemMapper itemMapper;
     private final OrderCancelDelaySender orderCancelDelaySender;
     private final IMqMessageLogService mqMessageLogService;
-    @Autowired
-    private ApplicationContext applicationContext;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -311,29 +306,34 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             OrderVO vo = new OrderVO();
             BeanUtils.copyProperties(order, vo);
 
+            if (order.getItemSnapshot() != null) {
+                ItemSnapshotDTO snapshot = order.getItemSnapshot();
+                vo.setItemTitle(snapshot.getTitle());
+                if (snapshot.getImages() != null&& !snapshot.getImages().isEmpty() ) {
+                    vo.setItemImage(snapshot.getImages().get(0));
+                }
+                vo.setItemDescription(snapshot.getDescription());
+            } else if (order.getItemId() != null && itemMap.containsKey(order.getItemId())) {
+                // 兜底：如果没有快照，才查商品表最新信息
+                Item item = itemMap.get(order.getItemId());
+                vo.setItemTitle(item.getTitle());
+                vo.setItemImage(item.getImages());
+                vo.setItemDescription(item.getDescription());
+            }
             //物流信息
             Shipment shipment = shipmentMap.get(order.getId());
             if (shipment != null) {
-                vo.setShipmentCompany(shipment.getCompany());
-                vo.setTrackingNo(shipment.getTrackingNo());
                 vo.setShippedAt(shipment.getShippedAt());
                 vo.setDeliveredAt(shipment.getDeliveredAt());
-                vo.setReceiverName(shipment.getReceiverName());
-                vo.setReceiverPhone(shipment.getReceiverPhone());
-                vo.setReceiverProvince(shipment.getReceiverProvince());
-                vo.setReceiverCity(shipment.getReceiverCity());
-                vo.setReceiverDistrict(shipment.getReceiverDistrict());
-                vo.setReceiverAddress(shipment.getReceiverAddress());
+                //vo.setReceiverName(shipment.getReceiverName());
+               // vo.setReceiverPhone(shipment.getReceiverPhone());
+                //vo.setReceiverProvince(shipment.getReceiverProvince());
+               // vo.setReceiverCity(shipment.getReceiverCity());
+               // vo.setReceiverDistrict(shipment.getReceiverDistrict());
+               // vo.setReceiverAddress(shipment.getReceiverAddress());
             }
 
             //商品信息 从内存Map获取
-            Long currentItemId = order.getItemId();
-            if (currentItemId != null && itemMap.containsKey(currentItemId)) {
-                Item item = itemMap.get(currentItemId);
-                vo.setItemTitle(item.getTitle());
-                vo.setItemDescription(item.getDescription());
-                vo.setItemImage(item.getImages());
-            }
             return vo;
         }).collect(Collectors.toList());
 
@@ -346,7 +346,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         );
 
         //12.缓存 添加随机过期时间 防止缓存雪崩
-        long ttl = 10 + ThreadLocalRandom.current().nextInt(10); //10-20min
+        long ttl = 3 + ThreadLocalRandom.current().nextInt(2);
         redisTemplate.opsForValue().set(cacheKey, result, ttl, TimeUnit.MINUTES);
         return result;
     }
@@ -354,8 +354,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public OrderVO details(Long orderId) {
         Long userId = BaseContext.getCurrentId();
+        //查询redis之前 走索引校验订单用户信息
+        Order order = lambdaQuery()
+                .select(Order::getId, Order::getBuyerId, Order::getSellerId)
+                .eq(Order::getId, orderId)
+                .one();
 
-        //先查redis
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+
+        if (!userId.equals(order.getBuyerId()) && !userId.equals(order.getSellerId())) {
+            throw new BusinessException("无权限访问该订单");
+        }
+        //查redis
         String cacheKey = RedisConstant.ORDER_DETAILS + orderId;
 
         OrderVO cachedOrder = (OrderVO) redisTemplate.opsForValue().get(cacheKey);
@@ -364,19 +376,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
 
         // 查询订单时可以分别获取买家和卖家的订单
-        Order order = lambdaQuery()
+        Order fullOrder = lambdaQuery()
                 .eq(Order::getId, orderId)
                 .and(wrapper -> wrapper.eq(Order::getBuyerId, userId).or().eq(Order::getSellerId, userId))
                 .one();
 
-        if (order == null) {
+        if (fullOrder == null) {
             throw new BusinessException("订单不存在");
         }
 
         // 没有缓存   OrderVO
         OrderVO orderVO = new OrderVO();
-        BeanUtils.copyProperties(order, orderVO);
-
+        BeanUtils.copyProperties(fullOrder, orderVO);
+        if (fullOrder.getItemSnapshot() != null) {
+            ItemSnapshotDTO snapshot = fullOrder.getItemSnapshot();
+            orderVO.setItemTitle(snapshot.getTitle());
+            orderVO.setItemDescription(snapshot.getDescription());
+            if (snapshot.getImages() != null && !snapshot.getImages().isEmpty()) {
+                orderVO.setItemImage(snapshot.getImages().get(0));
+            }
+            orderVO.setPrice(snapshot.getPrice());
+        }
 
         // 存入缓存
         redisTemplate.opsForValue().set(cacheKey, orderVO, 30, TimeUnit.MINUTES);
@@ -551,7 +571,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 try {
                     // 写入自动确认队列
                     String zsetKey = RedisConstant.AUTO_CONFIRM_KEY;
-                    long expireTimestamp = System.currentTimeMillis() / 1000 + 7 * 24 * 3600;
+                    long expireTimestamp = System.currentTimeMillis() / 7 * 24 * 3600 - 180;// 7天提前3分钟
                     stringRedisTemplate.opsForZSet().add(zsetKey, String.valueOf(orderId), expireTimestamp);
                     // 清理缓存
                     clearOrderCache(dbOrder);

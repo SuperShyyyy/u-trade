@@ -55,7 +55,7 @@ public class OrderVO implements Serializable {
     private ItemSnapshotDTO itemSnapshot;
 
     @ApiModelProperty(value = "物流号 关联shipmen表")
-    private Long shipmenId;
+    private Long shipmentId;
 
     @ApiModelProperty("收货人姓名")
     private String receiverName;
@@ -74,12 +74,6 @@ public class OrderVO implements Serializable {
 
     @ApiModelProperty("详细地址")
     private String receiverAddress;
-
-    @ApiModelProperty("物流公司")
-    private String shipmentCompany;
-
-    @ApiModelProperty("快递单号")
-    private String trackingNo;
 
     @ApiModelProperty("发货时间")
     private LocalDateTime shippedAt;

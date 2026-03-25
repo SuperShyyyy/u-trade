@@ -1,6 +1,8 @@
 package com.sec.domain.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
+
 import lombok.Data;
 
 /**
@@ -17,9 +19,5 @@ public class ItemSnapshotDTO {
 
     private BigDecimal price;   // 下单时的单价
 
-    private String cover;       // 下单时的封面图URL
-
-    private String images;      // 下单时的图集 (逗号分隔)
-
-    private Long sellerId;      // 卖家ID
+    private List<String> images; // 下单时的图集 (List)
 }
