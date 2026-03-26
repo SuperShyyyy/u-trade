@@ -46,7 +46,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         Map<Integer,CategoryVO> map =voList.stream().collect(Collectors.toMap(CategoryVO::getId , v->v));
         List<CategoryVO> roots = new ArrayList<>();
         for (CategoryVO vo : voList) {
-            if (vo.getParentId()==0){
+            if (vo.getParentId()==null||vo.getParentId()==0){
                 roots.add(vo);
             }
             else{

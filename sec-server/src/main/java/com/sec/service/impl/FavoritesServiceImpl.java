@@ -52,18 +52,17 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
         favorite.setUserId(userId);
         favorite.setItemId(itemId);
         favorite.setCreateTime(LocalDateTime.now());
+        boolean success = false;
         try {
-            this.save(favorite);
-
-            // 更新商品收藏数
-            itemMapper.update(null, new LambdaUpdateWrapper<Item>()
-                    .setSql("want_count = want_count + 1")
-                    .eq(Item::getId, itemId));
-
+            success = this.save(favorite);
         } catch (org.springframework.dao.DuplicateKeyException e) {
             throw new BusinessException("该商品已收藏");
         }
-
+        if (success) {
+            itemMapper.update(null, new LambdaUpdateWrapper<Item>()
+                    .setSql("want_count = want_count + 1")
+                    .eq(Item::getId, itemId));
+        }
         // 清理用户收藏缓存
         deleteUserFavoriteCache(userId);
     }
@@ -136,7 +135,7 @@ public class FavoritesServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> 
             throw new BusinessException("收藏的商品不存在");
         }
         itemMapper.update(null, new LambdaUpdateWrapper<Item>()
-                .setSql("want_count = want_count - 1")
+                .setSql("want_count = CASE WHEN want_count > 0 THEN want_count - 1 ELSE 0 END")
                 .eq(Item::getId, itemId));
 
         // 清理用户收藏缓存

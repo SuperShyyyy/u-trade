@@ -44,6 +44,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
     private final ItemEsService itemEsService;
     private final ItemEsSender itemEsSender;
     private final StringRedisTemplate stringRedisTemplate;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateItemStatus(Long id, Integer status) {
@@ -170,7 +171,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             throw new BusinessException("参数为空，无法查询");
         }
 
-        if (page < 0) page = 0;
+        page = Math.max(page, 0);
 
         Page<Item> pageParam = new Page<>(page + 1, pageSize);
         LambdaQueryWrapper<Item> queryWrapper = new LambdaQueryWrapper<>();
@@ -196,7 +197,6 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
 
         return PageDTO.of(voPage);
     }
-
 
     @Override
     public PageDTO<ItemVO> searchItems(String keyword, int page, int pageSize) {
