@@ -25,6 +25,7 @@ import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.jaxb.SpringDataJaxb;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -255,7 +256,12 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
                 Wrappers.<UserWallet>lambdaQuery()
                         .eq(UserWallet::getUserId, userId)
         );
-        if (wallet == null) {
+
+        if (wallet != null) {
+            return wallet;
+        }
+
+        try {
             wallet = new UserWallet()
                     .setUserId(userId)
                     .setBalance(BigDecimal.ZERO)
@@ -263,21 +269,23 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
                     .setTotalIncome(BigDecimal.ZERO)
                     .setTotalExpense(BigDecimal.ZERO)
                     .setVersion(0);
+
             this.save(wallet);
+            return wallet;
+
+        } catch (DuplicateKeyException e) {
+            return userWalletMapper.selectOne(
+                    Wrappers.<UserWallet>lambdaQuery()
+                            .eq(UserWallet::getUserId, userId)
+            );
         }
-        return wallet;
     }
 
 
     @Transactional
     @Override
     public void freezeAmount(Long userId, BigDecimal amount, String orderNo) {
-        /*
-         *
-        UserWallet wallet = userWalletMapper.selectOne(
-                Wrappers.<UserWallet>lambdaQuery()
-                        .eq(UserWallet::getUserId, userId)
-        );*/
+
         UserWallet wallet = getOrCreateWallet(userId);
 
         if (wallet.getBalance().compareTo(amount) < 0) {
@@ -322,11 +330,8 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     @Override
     public void unfreezeAmount(Long userId, BigDecimal amount, String orderNo) {
 
-        UserWallet wallet = userWalletMapper.selectOne(
-                Wrappers.<UserWallet>lambdaQuery()
-                        .eq(UserWallet::getUserId, userId)
-        );
 
+       UserWallet wallet = getOrCreateWallet(userId);
         if (wallet.getFrozenAmount().compareTo(amount) < 0) {
             throw new RuntimeException("冻结金额不足");
         }
@@ -372,14 +377,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     public void transferFrozenToSeller(Long buyerId, Long sellerId, BigDecimal amount, String orderNo) {
 
         // 1 查询买家钱包
-        UserWallet buyerWallet = userWalletMapper.selectOne(
-                Wrappers.<UserWallet>lambdaQuery()
-                        .eq(UserWallet::getUserId, buyerId)
-        );
-
-        if (buyerWallet == null) {
-            throw new RuntimeException("买家钱包不存在");
-        }
+        UserWallet buyerWallet = getOrCreateWallet(buyerId);
 
         if (buyerWallet.getFrozenAmount().compareTo(amount) < 0) {
             throw new RuntimeException("冻结金额不足");
@@ -406,14 +404,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         }
 
         // 3 查询卖家钱包
-        UserWallet sellerWallet = userWalletMapper.selectOne(
-                Wrappers.<UserWallet>lambdaQuery()
-                        .eq(UserWallet::getUserId, sellerId)
-        );
-
-        if (sellerWallet == null) {
-            throw new RuntimeException("卖家钱包不存在");
-        }
+        UserWallet sellerWallet = getOrCreateWallet(sellerId);
 
         BigDecimal sellerBalanceBefore = sellerWallet.getBalance();
         Integer sellerVersion = sellerWallet.getVersion();

@@ -27,6 +27,7 @@ public class RetrySendMessage {
                         MqMessageLogStatus.SENDING, // 发送中
                         MqMessageLogStatus.FAILED) //发送失败
                 .lt(MqMessageLog::getRetryCount, 3)
+                .orderByAsc(MqMessageLog::getCreateTime)
                 .last("limit 100")
                 .list();
 
@@ -38,7 +39,7 @@ public class RetrySendMessage {
                 );
                 boolean locked = mqMessageLogService.lambdaUpdate()
                         .eq(MqMessageLog::getMessageId, msgLog.getMessageId())
-                        .eq(MqMessageLog::getRetryCount, msgLog.getRetryCount()) // ⭐关键
+                        .eq(MqMessageLog::getRetryCount, msgLog.getRetryCount())
                         .set(MqMessageLog::getRetryCount, msgLog.getRetryCount() + 1)
                         .update();
                 if (!locked) {

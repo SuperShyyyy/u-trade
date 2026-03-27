@@ -57,4 +57,7 @@ public class RedisConstant {
 
     //redis自动确认收货
     public static final String AUTO_CONFIRM_KEY = "order:auto_confirm:queue";
+
+    //mq结算
+    public static final String WALLET_SETTLE = "wallet:settle:";
 }
