@@ -32,12 +32,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -157,7 +162,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public OrderPaymentVO payment(OrderPaymentDTO dto) throws Exception {
+    public OrderPaymentVO payment(OrderPaymentDTO dto)  {
         Long userId = BaseContext.getCurrentId();
         String orderNo = dto.getOrderNo();
 
@@ -326,11 +331,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 vo.setShippedAt(shipment.getShippedAt());
                 vo.setDeliveredAt(shipment.getDeliveredAt());
                 //vo.setReceiverName(shipment.getReceiverName());
-               // vo.setReceiverPhone(shipment.getReceiverPhone());
+                // vo.setReceiverPhone(shipment.getReceiverPhone());
                 //vo.setReceiverProvince(shipment.getReceiverProvince());
-               // vo.setReceiverCity(shipment.getReceiverCity());
-               // vo.setReceiverDistrict(shipment.getReceiverDistrict());
-               // vo.setReceiverAddress(shipment.getReceiverAddress());
+                // vo.setReceiverCity(shipment.getReceiverCity());
+                // vo.setReceiverDistrict(shipment.getReceiverDistrict());
+                // vo.setReceiverAddress(shipment.getReceiverAddress());
             }
 
             //商品信息 从内存Map获取
@@ -571,7 +576,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 try {
                     // 写入自动确认队列
                     String zsetKey = RedisConstant.AUTO_CONFIRM_KEY;
-                    long expireTimestamp = System.currentTimeMillis() / 7 * 24 * 3600 - 180;// 7天提前3分钟
+                    long expireTimestamp = System.currentTimeMillis() / 1000
+                            + TimeUnit.DAYS.toSeconds(7)
+                            - TimeUnit.MINUTES.toSeconds(3); // 7天后，提前3分钟触发
                     stringRedisTemplate.opsForZSet().add(zsetKey, String.valueOf(orderId), expireTimestamp);
                     // 清理缓存
                     clearOrderCache(dbOrder);
@@ -582,8 +589,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }
         });
 
-    log.info("订单 {} 发货 DB 操作完成，等待事务提交", orderId);
-}
+        log.info("订单 {} 发货 DB 操作完成，等待事务提交", orderId);
+    }
 
     @Override
     public ShipmentVO queryShipmentByOrderId(Long orderId) {
@@ -630,15 +637,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 订单详情
         keys.add(RedisConstant.ORDER_DETAILS + order.getId());
 
-        // 买家订单缓存
+        // 买家订单缓存（分页 key 包含 page/size/status，按前缀删除）
         if (order.getBuyerId() != null) {
-            keys.add(RedisConstant.ORDER_PAGE_QUERY_BUYER + order.getBuyerId());
+            deleteKeysByPrefix(RedisConstant.ORDER_PAGE_QUERY_BUYER + order.getBuyerId() + ":");
         }
 
-        // 卖家订单缓存
+        // 卖家订单缓存（分页 key 包含 page/size/status，按前缀删除）
         if (order.getSellerId() != null) {
-            keys.add(RedisConstant.ORDER_PAGE_QUERY_SELLER + order.getSellerId());
-            keys.add(RedisConstant.ITEM_LIST_SELLER + order.getSellerId());
+            deleteKeysByPrefix(RedisConstant.ORDER_PAGE_QUERY_SELLER + order.getSellerId() + ":");
+            deleteKeysByPrefix(RedisConstant.ITEM_LIST_SELLER + order.getSellerId() + ":");
         }
 
         // 商品详情
@@ -649,6 +656,37 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!keys.isEmpty()) {
             stringRedisTemplate.delete(keys);
             log.debug("清除订单缓存: {}", keys);
+        }
+    }
+
+    /**
+     * 分页缓存 key 通常携带动态维度（page/size/status），不能只删固定前缀 key。
+     * 使用 SCAN 按前缀匹配并批量删除，避免删不干净。
+     */
+    private void deleteKeysByPrefix(String prefix) {
+        Set<String> matchedKeys = new HashSet<>();
+        ScanOptions scanOptions = ScanOptions.scanOptions()
+                .match(prefix + "*")
+                .count(200)
+                .build();
+        RedisConnectionFactory factory = stringRedisTemplate.getConnectionFactory();
+        if (factory == null) {
+            log.warn("RedisConnectionFactory 为空，跳过前缀清理: {}", prefix);
+            return;
+        }
+
+        try (RedisConnection connection = factory.getConnection();
+             Cursor<byte[]> cursor = connection.scan(scanOptions)) {
+            while (cursor.hasNext()) {
+                matchedKeys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+            }
+        } catch (Exception e) {
+            log.error("按前缀扫描缓存 key 失败，prefix={}", prefix, e);
+        }
+
+        if (!matchedKeys.isEmpty()) {
+            stringRedisTemplate.delete(matchedKeys);
+            log.debug("按前缀清理缓存: prefix={}, count={}", prefix, matchedKeys.size());
         }
     }
 
