@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.core.type.TypeReference;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -122,7 +122,16 @@ public class HomeRecommendServiceImpl implements HomeRecommendService {
             return null;
         }
 
-        return (List<ItemVO>) obj;
+        try {
+            // 将获取到的对象转换为 String (即你存入的 JSON 字符串)
+            String jsonStr = String.valueOf(obj);
+            // 使用 Jackson 反序列化为具体的泛型 List
+            return objectMapper.readValue(jsonStr, new TypeReference<List<ItemVO>>() {});
+        } catch (Exception e) {
+            log.error("从 Redis 反序列化推荐列表失败", e);
+            // 如果反序列化失败，返回 null，让业务逻辑走 fallbackQuery(降级查数据库)
+            return null;
+        }
     }
 
     /**

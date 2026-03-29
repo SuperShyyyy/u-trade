@@ -4,6 +4,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 商品同步 ES 的 MQ 消息体
@@ -15,7 +16,8 @@ public class ItemSyncMessage implements Serializable {
 
     /** 商品 ID */
     private Long id;
-
+    /** 新增：用于批量操作的 ID 集合 */
+    private List<Long> ids;
     /** 操作类型 */
     private OperationType operationType;
 
@@ -45,6 +47,7 @@ public class ItemSyncMessage implements Serializable {
     public enum OperationType {
         ADD,
         UPDATE,
-        DELETE
+        DELETE,
+        BATCH_UPDATE_STATUS
     }
 }

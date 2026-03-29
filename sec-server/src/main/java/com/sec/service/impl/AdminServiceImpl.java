@@ -1,14 +1,15 @@
 package com.sec.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.sec.constant.JwtClaimsConstant;
-import com.sec.constant.RoleConstant;
+import com.sec.constant.*;
 import com.sec.context.BaseContext;
 import com.sec.domain.dto.AdminDTO;
 import com.sec.domain.dto.LoginDTO;
 import com.sec.domain.po.Admin;
+import com.sec.domain.po.Item;
 import com.sec.domain.po.User;
 import com.sec.domain.vo.AdminVO;
 import com.sec.domain.vo.LoginVO;
@@ -16,23 +17,31 @@ import com.sec.domain.vo.UserVO;
 import com.sec.exception.BusinessException;
 import com.sec.exception.PermissionDeniedException;
 import com.sec.mapper.AdminMapper;
+import com.sec.mapper.ItemMapper;
 import com.sec.mapper.UserMapper;
+import com.sec.mq.sender.ItemEsSender;
 import com.sec.properties.JwtProperties;
 import com.sec.result.PageDTO;
 import com.sec.result.Result;
 import com.sec.service.IAdminService;
+import com.sec.service.ItemEsService;
 import com.sec.utils.JwtUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 系统管理员表 服务实现类
@@ -49,7 +58,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private final UserMapper usersMapper;
-
+    private final ItemMapper itemMapper;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final ItemEsSender itemEsSender;
     @Override
     public LoginVO adminLogin(LoginDTO loginDTO) {
         // 1. 根据账号查询管理员
@@ -257,16 +268,73 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         return PageDTO.of(voPage);
     }
+
+
+    @Transactional
     @Override
     public void updateUserStatus(Long id, Integer status) {
+        if(id==null || status == null){
+            throw new BusinessException("参数异常无法查询");
+        }
         String currentRole = BaseContext.getCurrentRole();
         if (!RoleConstant.COMMON_ADMIN.equals(currentRole) && !RoleConstant.SUPER_ADMIN.equals(currentRole)) {
             throw new PermissionDeniedException("权限不足，无法查找");
         }
+
+        //获取该用户所有商品ID
+        List<Long> itemIds = itemMapper.selectList(new LambdaQueryWrapper<Item>()
+                        .select(Item::getId)
+                        .eq(Item::getSellerId, id))
+                .stream()
+                .map(Item::getId)
+                .collect(Collectors.toList());
+        Integer targetItemStatus;
+        if (status.equals(UserStatusConstant.NORMAL)) {
+            // 【解封】：将之前被锁定的商品恢复为上架（或者下架，看业务需求，通常恢复为 LOCKED 之前的状态）
+            // 这里简单处理：将被锁定的(2)恢复为上架(1)
+            targetItemStatus = ItemStatusConstant.ON_SALE;
+            itemMapper.update(null, new LambdaUpdateWrapper<Item>()
+                    .set(Item::getStatus, targetItemStatus)
+                    .set(Item::getUpdateTime, LocalDateTime.now())
+                    .eq(Item::getSellerId, id)
+                    .eq(Item::getStatus, ItemStatusConstant.LOCKED)); // 只恢复那些因为封号被锁定的
+        } else {
+            //封禁
+            targetItemStatus = ItemStatusConstant.LOCKED;
+
+            itemMapper.update(null, new LambdaUpdateWrapper<Item>()
+                    .set(Item::getStatus, targetItemStatus)
+                    .set(Item::getUpdateTime, LocalDateTime.now())
+                    .eq(Item::getSellerId, id)
+                    .in(Item::getStatus, List.of(ItemStatusConstant.ON_SALE, ItemStatusConstant.AUDIT_PENDING)));
+        }
+        if (!itemIds.isEmpty()) {
+            List<String> keys = itemIds.stream()
+                    .map(itemId -> RedisConstant.ITEM_DETAIL + itemId)
+                    .collect(Collectors.toList());
+            stringRedisTemplate.delete(keys);
+            log.info("用户 {} 状态变更，清理了 {} 个商品的详情缓存", id, keys.size());
+        }
+
+
         User user = new User();
         user.setId(id);
         user.setStatus(status);
         usersMapper.updateById(user);
 
+        if (!itemIds.isEmpty()) {
+            Integer targetStatus = status.equals(UserStatusConstant.NORMAL)
+                    ? ItemStatusConstant.ON_SALE : ItemStatusConstant.LOCKED;
+
+            itemEsSender.sendBatchUpdateStatusMessage(itemIds, targetStatus);
+        }
+        clearCache(itemIds);
+    }
+
+    private void clearCache(List<Long> itemIds) {
+        List<String> keys = itemIds.stream()
+                .map(itemId -> RedisConstant.ITEM_DETAIL + itemId)
+                .collect(Collectors.toList());
+        stringRedisTemplate.delete(keys);
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -106,5 +107,48 @@ public class ItemEsSender {
         message.setUpdateTime(item.getUpdateTime());
         message.setOperateTime(LocalDateTime.now());
         return message;
+    }
+
+    /**
+     * 发送商品批量状态更新消息
+     * @param ids 商品ID列表
+     * @param status 目标状态
+     */
+    public void sendBatchUpdateStatusMessage(List<Long> ids, Integer status) {
+        if (ids == null || ids.isEmpty() || status == null) {
+            log.warn("批量更新数据为空，跳过发送 MQ 消息");
+            return;
+        }
+
+        // 1. 构建 批量更新的消息体
+        ItemSyncMessage message = new ItemSyncMessage();
+        message.setIds(ids);
+        message.setStatus(status);
+        message.setOperationType(ItemSyncMessage.OperationType.BATCH_UPDATE_STATUS);
+        message.setOperateTime(LocalDateTime.now());
+
+        String messageId = UUID.randomUUID().toString();
+        String exchange = RabbitMQConstant.EXCHANGE_ITEM_SYNC;
+        String routingKey = RabbitMQConstant.ROUTING_KEY_ITEM_SYNC;
+
+        log.info("准备发送批量状态更新 MQ 消息，Count: {}, NewStatus: {}, MessageId: {}",
+                ids.size(), status, messageId);
+
+        try {
+            CorrelationData correlationData = new CorrelationData(messageId);
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, message, msg -> {
+                msg.getMessageProperties().setMessageId(messageId);
+                msg.getMessageProperties().setTimestamp(new Date());
+                return msg;
+            }, correlationData);
+
+            log.info("批量状态更新 MQ 消息发送完成，Count: {}", ids.size());
+
+        } catch (Exception e) {
+            log.error("发送批量状态更新 MQ 消息异常，Count: {}, Error: {}",
+                    ids.size(), e.getMessage(), e);
+
+        }
     }
 }

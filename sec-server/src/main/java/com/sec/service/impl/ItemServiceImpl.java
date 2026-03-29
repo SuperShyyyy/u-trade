@@ -289,7 +289,9 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
             stringRedisTemplate.opsForValue().set(detailKey, "null", 3, TimeUnit.MINUTES);
             return null;
         }
-
+        if(!item.getStatus().equals( ItemStatusConstant.ON_SALE) ) {
+            throw new BusinessException("商品状态异常");
+        }
         // 只转换一次VO
         ItemVO baseVo = convertToVO(item);
         String baseJson = JSON.toJSONString(baseVo);

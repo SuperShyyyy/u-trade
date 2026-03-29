@@ -1,5 +1,6 @@
 package com.sec.mq.listener;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.sec.constant.RabbitMQConstant;
 import com.sec.domain.es.ItemDocument;
 import com.sec.message.ItemSyncMessage;
@@ -11,9 +12,14 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.BeanUtils;
-
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.io.IOException;
-
+import java.util.List;
 /**
  * 商品同步 ES 消费者
  */
@@ -23,7 +29,8 @@ import java.io.IOException;
 public class ItemEsListener {
 
     private final ItemEsService itemEsService;
-
+    // 修改字段注入
+    private final ElasticsearchClient elasticsearchClient; // 替代 RestHighLevelClient
     @RabbitListener(queues = RabbitMQConstant.QUEUE_ITEM_SYNC)
     public void handleItemSync(ItemSyncMessage msg,
                                Channel channel,
@@ -31,10 +38,9 @@ public class ItemEsListener {
 
         long tag = message.getMessageProperties().getDeliveryTag();
         String messageId = message.getMessageProperties().getMessageId();
-        Long itemId = msg.getId();
 
-        log.info("收到商品同步消息，ItemId: {}, Operation: {}, MessageId: {}",
-                itemId, msg.getOperationType(), messageId);
+        log.info("收到商品同步消息，Operation: {}, MessageId: {}",
+                msg.getOperationType(), messageId);
 
         try {
             // 根据操作类型执行不同逻辑
@@ -44,13 +50,18 @@ public class ItemEsListener {
                     // 新增或更新：构建文档并保存
                     ItemDocument document = convertToDocument(msg);
                     itemEsService.save(document);
-                    log.info("ES 同步成功 (ADD/UPDATE), ItemId: {}", itemId);
+                    log.info("ES 同步成功 (ADD/UPDATE), ItemId: {}", msg.getId());
                     break;
 
                 case DELETE:
                     // 删除：从 ES 删除
-                    itemEsService.delete(itemId);
-                    log.info("ES 同步成功 (DELETE), ItemId: {}", itemId);
+                    itemEsService.delete(msg.getId());
+                    log.info("ES 同步成功 (DELETE), ItemId: {}", msg.getId());
+                    break;
+                case BATCH_UPDATE_STATUS:
+                    handleBatchUpdateStatus(msg.getIds(), msg.getStatus());
+                    log.info("ES 批量同步成功 (BATCH_UPDATE_STATUS), 数量: {}",
+                            msg.getIds() != null ? msg.getIds().size() : 0);
                     break;
 
                 default:
@@ -65,16 +76,61 @@ public class ItemEsListener {
 
         } catch (IllegalArgumentException e) {
             // 参数错误等永久异常，进入死信队列
-            log.error("ES 同步失败 (永久异常), ItemId: {}, Error: {}", itemId, e.getMessage());
+            log.error("ES 同步失败 (永久异常), ItemId: {}, Error: {}", msg.getId(), e.getMessage());
             channel.basicNack(tag, false, false);
 
         } catch (Exception e) {
-            // 网络异常、ES 不可用等临时异常，重新入队重试
-            log.error("ES 同步失败 (临时异常), ItemId: {}, Error: {}", itemId, e.getMessage(), e);
-            channel.basicNack(tag, false, true);
+            // 统一捕获异常，决定是否重试
+            log.error("ES 同步失败, MessageId: {}, Error: {}", messageId, e.getMessage(), e);
+            // 如果是参数错误等不可恢复异常，不重试
+            // 如果是 ES 宕机等临时异常，重试
+            boolean requeue = !(e instanceof IllegalArgumentException);
+            channel.basicNack(tag, false, requeue);
         }
     }
 
+
+    private void handleBatchUpdateStatus(List<Long> ids, Integer status) throws IOException {
+        if (ids == null || ids.isEmpty() || status == null) {
+            log.warn("批量更新参数为空，跳过处理");
+            return;
+        }
+
+        BulkRequest.Builder bulkBuilder = new BulkRequest.Builder();
+        String indexName = "item";
+
+        for (Long id : ids) {
+            if (id == null) continue;
+
+            Map<String, Object> updateDoc = new HashMap<>();
+            updateDoc.put("status", status);
+
+            bulkBuilder.operations(op -> op.update(
+                    UpdateOperation.of(u -> u
+                            .index(indexName)
+                            .id(id.toString())
+                            .action(a -> a.doc(updateDoc))
+                    )
+            ));
+        }
+
+        BulkResponse response = elasticsearchClient.bulk(bulkBuilder.build());
+
+        if (response.errors()) {
+            String failures = response.items().stream()
+                    .filter(item -> item.error() != null)
+                    .map(item -> String.format("[ID:%s] %s (Status:%d)",
+                            item.id(),
+                            item.error().reason(),
+                            item.status()))
+                    .collect(Collectors.joining("; "));
+
+            log.error("ES 批量更新失败: {}", failures);
+            throw new RuntimeException("ES 批量更新部分失败: " + failures);
+        }
+
+        log.info("ES 批量状态更新成功，更新数量: {}", ids.size());
+    }
     /**
      * 消息体转 ES 文档
      */
@@ -93,7 +149,7 @@ public class ItemEsListener {
         }
 
         ItemDocument doc = new ItemDocument();
-        doc.setId(msg.getId());  // ⚠️ 手动设置 ID
+        doc.setId(msg.getId());
         BeanUtils.copyProperties(msg, doc, "itemId");
 
         log.info("Document 转换完成，doc.getId() = {}", doc.getId());
@@ -104,4 +160,5 @@ public class ItemEsListener {
 
         return doc;
     }
+
 }
