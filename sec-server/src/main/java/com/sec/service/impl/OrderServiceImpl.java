@@ -18,13 +18,13 @@ import com.sec.domain.vo.ShipmentVO;
 import com.sec.exception.BusinessException;
 import com.sec.mapper.ItemMapper;
 import com.sec.mapper.OrderMapper;
-import com.sec.mapper.PaymentMapper;
 import com.sec.mapper.ShipmentMapper;
 import com.sec.message.OrderSettlementMessage;
 import com.sec.mq.sender.OrderCancelDelaySender;
 import com.sec.mq.sender.OrderSettlementSender;
 import com.sec.result.PageDTO;
 import com.sec.service.*;
+import com.sec.service.payment.PayExecuteResult;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +64,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
 
     private final OrderMapper orderMapper;
-    private final PaymentMapper paymentMapper;
     private final ShipmentMapper shipmentMapper;
     private final IShipmentService shipmentService;
     private final IUserAddressService userAddressService;
@@ -76,6 +75,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final ItemMapper itemMapper;
     private final OrderCancelDelaySender orderCancelDelaySender;
     private final IMqMessageLogService mqMessageLogService;
+    private final IPaymentService paymentService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -116,8 +116,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 3. 查询地址
         UserAddress address = userAddressService.getById(dto.getAddressId());
+
         if (address == null) {
             throw new BusinessException("收货地址不存在");
+        }
+        if(!address.getUserId().equals(userId)) {
+            throw new BusinessException("非当前用户收货地址");
         }
 
         // 4. 创建订单对象
@@ -179,27 +183,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             //已支付直接返回成功
             if (order.getStatus() == OrderStatusConstant.PAID) {
                 log.info("订单 {} 重复支付请求，直接返回成功", orderNo);
-                return buildPaymentVO(order, dto);
+                Integer payType = dto.getPayType() == null ? PayMethodConstant.BALANCE : dto.getPayType();
+                return buildPaymentVO(order, payType, "PAID_SUCCESS");
             }
             throw new BusinessException("订单状态异常，无法支付 (当前状态:" + order.getStatus() + ")");
         }
-        userWalletService.freezeAmount(
-                order.getBuyerId(),
-                order.getTotalPrice(),
-                order.getOrderNo()
-        );
-        // 2. 创建支付记录
-        Payment payment = new Payment()
-                .setOrderNo(order.getOrderNo())
-                .setUserId(order.getBuyerId())
-                .setAmount(order.getTotalPrice())
-                .setMethod(dto.getPayType())
-                .setStatus(PaymentStatusConstant.SUCCESS)
-                .setPaymentNo(SerialNoUtil.generatePayNo())
-                .setPaidAt(LocalDateTime.now())
-                .setCreatedAt(LocalDateTime.now());
-
-        paymentMapper.insert(payment);
+        // 2. 执行支付（工厂方法 + 策略），并写入支付流水
+        PayExecuteResult payResult = paymentService.executeOrderPay(order, dto.getPayType());
 
         // 3. 更新订单状态为已支付
         LambdaUpdateWrapper<Order> orderUpdate = new LambdaUpdateWrapper<>();
@@ -229,18 +219,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 5. 清除缓存
         clearOrderCache(order);
-        return buildPaymentVO(order, dto);
+        return buildPaymentVO(order, payResult.getPayType(), payResult.getPrepayInfo());
     }
 
     // 辅助方法 构建支付返回VO
-    private OrderPaymentVO buildPaymentVO(Order order, OrderPaymentDTO dto) {
+    private OrderPaymentVO buildPaymentVO(Order order, Integer payType, String prepayInfo) {
         OrderPaymentVO vo = new OrderPaymentVO();
         vo.setOrderId(order.getId());
         vo.setOrderNo(order.getOrderNo());
-        vo.setPayType(dto.getPayType());
+        vo.setPayType(payType);
         vo.setAmount(order.getTotalPrice().toString());
         vo.setStatus(OrderStatusConstant.PAID);
-        vo.setPrepayInfo("PAID_SUCCESS");
+        vo.setPrepayInfo(prepayInfo);
         return vo;
     }
 
@@ -419,6 +409,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .one();
         if (order == null) {
             throw new BusinessException("订单不存在，无法取消");
+        }
+        if(!order.getStatus().equals(OrderStatusConstant.WAIT_PAY)){
+            throw new BusinessException("订单状态异常，无法取消");
         }
         cancelOrderInternal(orderId);
     }

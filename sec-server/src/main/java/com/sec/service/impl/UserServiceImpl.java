@@ -21,6 +21,7 @@ import com.sec.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.retry.backoff.ThreadWaitSleeper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -54,6 +55,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 2. 校验用户是否存在
         if (user == null) {
             throw new BusinessException("用户不存在");
+        }
+        if(user.getStatus() == 0){
+            throw new BusinessException("用户已被封禁");
         }
         // 3. 校验密码 BCrypt比对
 

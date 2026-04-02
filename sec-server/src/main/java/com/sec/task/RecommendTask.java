@@ -16,7 +16,7 @@ public class RecommendTask {
     /**
      * 每5分钟刷新推荐缓存
      */
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */2 * * * ?")
     public void refreshRecommendCache() {
         log.info("定时刷新推荐缓存...");
         homeRecommendService.refreshRecommendCache();
