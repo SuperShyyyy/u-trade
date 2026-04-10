@@ -29,6 +29,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sec.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -77,92 +79,145 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final IMqMessageLogService mqMessageLogService;
     private final IPaymentService paymentService;
 
+    private  final RedissonClient redissonClient;
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
+
         Long userId = BaseContext.getCurrentId();
         Long itemId = dto.getItemId();
-        // 1.先用乐观锁 锁定商品
 
-        boolean isLocked = itemService.update(
-                new LambdaUpdateWrapper<Item>()
-                        .eq(Item::getId, itemId)
-                        .eq(Item::getStatus, ItemStatusConstant.ON_SALE)
-                        .set(Item::getStatus, ItemStatusConstant.LOCKED)
-                        .set(Item::getUpdateTime, LocalDateTime.now())
-        );
-        if (!isLocked) {
-            throw new BusinessException("宝贝已售出或正在被他人购买中，请稍后重试");
-        }
-        Item item = itemService.getById(itemId);
-        if (item == null ) {
-            throw new BusinessException("商品状态异常，请重试");
-        }
-        Long sellerId = item.getSellerId();
-        if (sellerId == null) {
-            throw new BusinessException("商品数据异常");
-        }
-        if (userId.equals(sellerId)) {
-            throw new BusinessException("不能购买自己的商品");
-        }
-        if (dto.getSellerId() != null && !dto.getSellerId().equals(sellerId)) {
-            throw new BusinessException("卖家信息与商品不一致");
-        }
-        // 2. 获取价格和运费
-        BigDecimal itemPrice = item.getPrice();
-        BigDecimal shippingFee = (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
-                ? BigDecimal.ZERO
-                : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
+        String lockKey = "order:lock:item:" + itemId;
+        RLock lock = redissonClient.getLock(lockKey);
 
-        // 3. 查询地址
-        UserAddress address = userAddressService.getById(dto.getAddressId());
+        boolean isLock = false;
 
-        if (address == null) {
-            throw new BusinessException("收货地址不存在");
-        }
-        if(!address.getUserId().equals(userId)) {
-            throw new BusinessException("非当前用户收货地址");
-        }
-
-        // 4. 创建订单对象
-        String orderNo = SerialNoUtil.generateOrderNo();
-        Order order = new Order()
-                .setBuyerId(userId)
-                .setSellerId(sellerId)
-                .setItemId(itemId)
-                .setPrice(itemPrice)
-                .setQuantity(1)
-                .setShippingFee(shippingFee)
-                .setTotalPrice(itemPrice.add(shippingFee))
-                .setStatus(OrderStatusConstant.WAIT_PAY)
-                .setCreatedAt(LocalDateTime.now())
-                .setReceiverProvince(address.getProvince())
-                .setReceiverCity(address.getCity())
-                .setReceiverDistrict(address.getDistrict())
-                .setReceiverAddress(address.getDetailAddress())
-                .setReceiverPhone(address.getReceiverPhone())
-                .setReceiverName(address.getReceiverName())
-                .setOrderNo(orderNo);
-
-        // 5. 插入订单
-        orderMapper.insert(order);
-
-        // 6. 发送延迟取消消息 (30分钟后检查是否支付)
         try {
-            orderCancelDelaySender.sendDelayCancelMessage(orderNo, order.getId());
-            log.info("订单 {} 创建成功，已发送30分钟未支付自动取消延迟消息", orderNo);
+            // 不等待 + 看门狗自动续期
+            isLock = lock.tryLock(0, -1, TimeUnit.SECONDS);
+
+            if (!isLock) {
+                throw new BusinessException("宝贝已售出或正在被他人购买中，请稍后重试");
+            }
+
+            // 1. 查询商品
+            Item item = itemService.getById(itemId);
+            if (item == null) {
+                throw new BusinessException("商品不存在");
+            }
+
+            Long sellerId = item.getSellerId();
+            if (sellerId == null) {
+                throw new BusinessException("商品数据异常");
+            }
+
+            if (userId.equals(sellerId)) {
+                throw new BusinessException("不能购买自己的商品");
+            }
+
+            if (dto.getSellerId() != null && !dto.getSellerId().equals(sellerId)) {
+                throw new BusinessException("卖家信息与商品不一致");
+            }
+
+            // 2. 数据库CAS更新
+            boolean success = itemService.update(
+                    new LambdaUpdateWrapper<Item>()
+                            .eq(Item::getId, itemId)
+                            .eq(Item::getStatus, ItemStatusConstant.ON_SALE)
+                            .set(Item::getStatus, ItemStatusConstant.LOCKED)
+                            .set(Item::getUpdateTime, LocalDateTime.now())
+            );
+
+            if (!success) {
+                throw new BusinessException("宝贝已售出或正在被他人购买中");
+            }
+
+            //  3. 价格计算
+            BigDecimal itemPrice = item.getPrice();
+            BigDecimal shippingFee = (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
+                    ? BigDecimal.ZERO
+                    : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
+
+            // 4. 查询地址
+            UserAddress address = userAddressService.getById(dto.getAddressId());
+            if (address == null) {
+                throw new BusinessException("收货地址不存在");
+            }
+            if (!address.getUserId().equals(userId)) {
+                throw new BusinessException("非当前用户收货地址");
+            }
+
+            //5. 创建订单
+            String orderNo = SerialNoUtil.generateOrderNo();
+
+            Order order = new Order()
+                    .setBuyerId(userId)
+                    .setSellerId(sellerId)
+                    .setItemId(itemId)
+                    .setPrice(itemPrice)
+                    .setQuantity(1)
+                    .setShippingFee(shippingFee)
+                    .setTotalPrice(itemPrice.add(shippingFee))
+                    .setStatus(OrderStatusConstant.WAIT_PAY)
+                    .setCreatedAt(LocalDateTime.now())
+                    .setReceiverProvince(address.getProvince())
+                    .setReceiverCity(address.getCity())
+                    .setReceiverDistrict(address.getDistrict())
+                    .setReceiverAddress(address.getDetailAddress())
+                    .setReceiverPhone(address.getReceiverPhone())
+                    .setReceiverName(address.getReceiverName())
+                    .setOrderNo(orderNo);
+
+            //6. 插入订单
+            orderMapper.insert(order);
+
+            //7. 发送延迟消息
+            try {
+                orderCancelDelaySender.sendDelayCancelMessage(orderNo, order.getId());
+                log.info("订单 {} 创建成功，已发送延迟取消消息", orderNo);
+            } catch (Exception e) {
+                log.error("订单 {} 延迟消息发送失败，走兜底任务", orderNo, e);
+            }
+
+            //8. 清除缓存
+            clearOrderCache(order);
+
+            //9. 事务后释放锁
+            if (isLock) {
+                TransactionSynchronizationManager.registerSynchronization(
+                        new TransactionSynchronization() {
+                            @Override
+                            public void afterCompletion(int status) {
+                                if (lock.isHeldByCurrentThread()) {
+                                    lock.unlock();
+                                }
+                            }
+                        }
+                );
+            }
+
+            OrderSubmitVO vo = new OrderSubmitVO();
+            BeanUtils.copyProperties(order, vo);
+            return vo;
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("系统繁忙，请稍后再试");
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
-            // 如果MQ发送失败，订单已经创建了。
-            // 记录错误日志，依靠定时任务兜底取消。不让用户感知，保证下单流程顺畅。
-            log.error("订单 {} 发送延迟取消消息失败，将依赖定时任务兜底", orderNo, e);
+            log.error("订单创建异常", e);
+            throw new BusinessException("订单创建失败，请稍后重试");
+        } finally {
+            if (isLock && lock.isHeldByCurrentThread()) {
+                try {
+                    lock.unlock();
+                } catch (Exception ignored) {}
+            }
         }
-        // 7. 清除缓存
-        clearOrderCache(order);
-        // 8. 返回 VO
-        OrderSubmitVO vo = new OrderSubmitVO();
-        BeanUtils.copyProperties(order, vo);
-        return vo;
     }
+
 
     @Transactional(rollbackFor = Exception.class)
     @Override
