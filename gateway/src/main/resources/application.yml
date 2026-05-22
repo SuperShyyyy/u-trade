@@ -2,17 +2,25 @@ server:
   port: 8080
 
 spring:
+  config:
+    import:
+      - optional:classpath:application-secret.yml
   application:
     name: gateway
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-        namespace: ${NACOS_NAMESPACE:public}
+        server-addr: 192.168.150.101:8848
+        namespace: public
+        group: DEFAULT_GROUP
+        service: gateway
       config:
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-        namespace: ${NACOS_NAMESPACE:public}
+        server-addr: 192.168.150.101:8848
+        namespace: public
+        group: DEFAULT_GROUP
         file-extension: yml
+        import-check:
+          enabled: false
     gateway:
       discovery:
         locator:
@@ -69,13 +77,12 @@ spring:
             - Path=/user/**
           order: 100
 
-sec:
+u:
   gateway:
     auth-secret: ${GATEWAY_AUTH_SECRET}
-  jwt:
-    admin-secret-key: ${JWT_ADMIN_SECRET}
-    admin-ttl: 7200000
-    admin-token-name: token
-    user-secret-key: ${JWT_USER_SECRET}
-    user-ttl: 7200000
-    user-token-name: token
+  swagger:
+    title: u-trade接口文档
+    description: u-trade接口文档
+    email: d726760649@gmail.com
+    concat: zhao
+    package: com.u.admin.controller

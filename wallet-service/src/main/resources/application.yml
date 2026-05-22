@@ -1,9 +1,9 @@
 spring:
   application:
-    name: user-service
+    name: wallet-service
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.150.101:3306/admin_service?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.150.101:3306/wallet_service?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${u.db.username}
     password: ${u.db.password}
   main:
@@ -12,7 +12,7 @@ spring:
     nacos:
       discovery:
         server-addr: 192.168.150.101:8848
-        service: user-service
+        service: wallet-service
       config:
         server-addr: 192.168.150.101:8848
         file-extension: yml
@@ -22,11 +22,11 @@ spring:
   config:
     import:
       - optional:nacos:shared-application.yml?group=DEFAULT_GROUP
-      - optional:nacos:${spring.application.name}.yml?group=DEFAULT_GROUP
+      #- optional:nacos:${spring.application.name}.yml?group=DEFAULT_GROUP
       - classpath:application-secret.yml
 
 server:
-  port: 8087
+  port: 8082
 data:
   redis:
     host: 192.168.150.101

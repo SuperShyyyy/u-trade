@@ -4,7 +4,7 @@ package com.u.common.properties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "sec.jwt")
+@ConfigurationProperties(prefix = "u.jwt")
 @Data
 public class JwtProperties {
 

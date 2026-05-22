@@ -1,0 +1,18 @@
+package com.u.chat.mapper;
+
+import com.u.chat.domain.po.ChatMessage;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+
+/**
+ * <p>
+ * 聊天消息表 Mapper 接口
+ * </p>
+ *
+ * @author author
+ * @since 2026-03-04
+ */
+@Mapper
+public interface ChatMessageMapper extends BaseMapper<ChatMessage> {
+
+}

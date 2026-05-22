@@ -1,4 +1,4 @@
-package com.u.api.item;
+package com.u.api.internal.item;
 
 import com.u.api.dto.item.OrderItemDTO;
 import com.u.common.result.Result;

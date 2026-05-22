@@ -47,6 +47,9 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/user/**")
                 .excludePathPatterns(excludePaths);
+
+        registry.addInterceptor(jwtAuthInterceptor)
+                .addPathPatterns("/inner/**");
     }
 
     @Bean

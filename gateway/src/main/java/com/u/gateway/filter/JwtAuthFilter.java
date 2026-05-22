@@ -61,6 +61,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             Object currentId = claims.get(JwtClaimsConstant.CURRENT_ID);
             Object role = claims.get(JwtClaimsConstant.ROLE);
             Object sourceType = claims.get(JwtClaimsConstant.SOURCE_TYPE);
+            log.debug("网关认证通过, path: {}, currentId: {}", path, currentId);
 
             ServerHttpRequest mutatedRequest = request.mutate().headers(headers -> {
                 clearInternalHeaders(headers);

@@ -1,8 +1,12 @@
-package com.u.api.user;
+package com.u.api.internal.user;
+
 import com.u.api.dto.user.UserDTO;
 import com.u.common.result.PageDTO;
 import com.u.common.result.Result;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 内部管理系统用户接口
@@ -12,10 +16,6 @@ public interface InternalAdminUserApi {
 
     /**
      * 分页查询用户列表
-     *
-     * @param page     当前页
-     * @param pageSize 每页大小
-     * @return 用户分页信息
      */
     @GetMapping("/page")
     Result<PageDTO<UserDTO>> pageQuery(
@@ -25,14 +25,16 @@ public interface InternalAdminUserApi {
 
     /**
      * 更新用户状态
-     *
-     * @param id     用户ID
-     * @param status 用户状态
-     * @return void
      */
     @PostMapping("/status")
     Result<Void> updateStatus(
             @RequestParam("id") Long id,
             @RequestParam("status") Integer status
     );
+
+    /**
+     * 批量查询用户信用分
+     */
+    @GetMapping("/credit-scores")
+    Result<Map<Long, Integer>> getUserCreditScores(@RequestParam("userIds") List<Long> userIds);
 }

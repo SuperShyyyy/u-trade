@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Data
-public class ItemDTO implements Serializable {
+public class OrderItemDTO implements Serializable {
 
     private Long id;
     private Long sellerId;

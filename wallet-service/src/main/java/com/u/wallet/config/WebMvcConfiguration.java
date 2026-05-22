@@ -15,8 +15,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.List;
-
 @Configuration
 @Import(CommonSecurityConfiguration.class)
 @Slf4j
@@ -49,6 +47,9 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/user/**")
                 .excludePathPatterns(excludePaths);
+
+        registry.addInterceptor(jwtAuthInterceptor)
+                .addPathPatterns("/inner/**");
     }
 
     @Bean
