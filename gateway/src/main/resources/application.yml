@@ -1,0 +1,81 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        file-extension: yml
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: item-service
+          uri: lb://item-service
+          predicates:
+            - Path=/user/item/**,/user/category/**,/user/review/**,/home/**
+          order: 10
+
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/user/order/**
+          order: 10
+
+        - id: wallet-service
+          uri: lb://wallet-service
+          predicates:
+            - Path=/user/wallet/**
+          order: 10
+
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/user/chat/**,/user/chat-message/**,/user/chat-conversation/**
+          order: 10
+
+        - id: search-service
+          uri: lb://search-service
+          predicates:
+            - Path=/search/**
+          order: 10
+
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/admin/**,/admin-logs/**
+          order: 20
+
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**
+          order: 100
+
+sec:
+  gateway:
+    auth-secret: ${GATEWAY_AUTH_SECRET}
+  jwt:
+    admin-secret-key: ${JWT_ADMIN_SECRET}
+    admin-ttl: 7200000
+    admin-token-name: token
+    user-secret-key: ${JWT_USER_SECRET}
+    user-ttl: 7200000
+    user-token-name: token
