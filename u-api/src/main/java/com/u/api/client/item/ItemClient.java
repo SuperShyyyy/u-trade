@@ -1,5 +1,6 @@
 package com.u.api.client.item;
 
+import com.u.api.dto.item.ItemTradeDTO;
 import com.u.api.dto.item.OrderItemDTO;
 import com.u.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -10,8 +11,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 @FeignClient(name = "item-service", path = "/inner/order/items")
 public interface ItemClient {
 
+/*
     @GetMapping("/{id}")
     Result<OrderItemDTO> getOrderItem(@PathVariable("id") Long id);
+*/
 
     @PutMapping("/{id}/lock")
     Result<Void> lockItem(@PathVariable("id") Long id);
@@ -21,4 +24,7 @@ public interface ItemClient {
 
     @PutMapping("/{id}/release")
     Result<Void> releaseItem(@PathVariable("id") Long id);
+
+    @GetMapping("/{id}")
+    Result<ItemTradeDTO> getItemTrade(Long id);
 }

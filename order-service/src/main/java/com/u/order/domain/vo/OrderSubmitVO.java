@@ -2,6 +2,8 @@ package com.u.order.domain.vo;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import com.u.common.message.ItemSnapshotDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -37,7 +39,7 @@ public class OrderSubmitVO {
     private Integer status;
 
     @Schema(description = "商品快照信息")
-    private String itemSnapshot;
+    private ItemSnapshotDTO itemSnapshot;
 
     @Schema(description = "订单创建时间")
     private LocalDateTime createdAt;

@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.u.api.client.item.ItemClient;
 import com.u.api.client.user.UserAddressClient;
 import com.u.api.client.wallet.WalletClient;
+import com.u.api.dto.item.ItemTradeDTO;
 import com.u.api.dto.item.OrderItemDTO;
 import com.u.api.dto.user.UserAddressDTO;
 import com.u.common.constant.MqMessageLogStatus;
@@ -120,61 +121,79 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         Long userId = BaseContext.getCurrentId();
         Long itemId = dto.getItemId();
-        Result<OrderItemDTO> itemResult = itemClient.getOrderItem(itemId);
+
+        // =========================
+        // FIX 1：必须使用“交易模型接口”
+        // =========================
+        Result<ItemTradeDTO> itemResult = itemClient.getItemTrade(itemId);
         ensureSuccess(itemResult, "查询商品失败");
-        OrderItemDTO item = itemResult.getData();
+
+        ItemTradeDTO item = itemResult.getData();
         if (item == null) {
             throw new BusinessException("商品不存在");
         }
+
         Long sellerId = item.getSellerId();
+
         if (userId.equals(sellerId)) {
             throw new BusinessException("不能购买自己的商品");
         }
+
         if (dto.getSellerId() != null && !dto.getSellerId().equals(sellerId)) {
             throw new BusinessException("卖家信息与商品不一致");
         }
+
         UserAddressDTO address = null;
         if (dto.getAddressId() != null) {
-            Result<UserAddressDTO> addressResult = userAddressClient.getAddress(dto.getAddressId(), userId);
+
+            Result<UserAddressDTO> addressResult =
+                    userAddressClient.getAddress(dto.getAddressId(), userId);
+
             ensureSuccess(addressResult, "查询收货地址失败");
+
             address = addressResult.getData();
+
             if (address == null) {
                 throw new BusinessException("收货地址不存在");
             }
-        }//前面操作都是查询请求无需事务
+        }
 
         String lockKey = "order:lock:item:" + itemId;
         RLock lock = redissonClient.getLock(lockKey);
+
         boolean isLock = false;
-        boolean releaseRemoteItemLock = false;
+        boolean remoteLocked = false;
 
         try {
-            // 不等待，立刻获取锁
-            isLock = lock.tryLock(0, -1, TimeUnit.SECONDS);
+
+            // =========================
+            // FIX 2：避免瞬间失败
+            // =========================
+            isLock = lock.tryLock(3, 30, TimeUnit.SECONDS);
             if (!isLock) {
-                throw new BusinessException("宝贝正在被他人购买中，请稍后重试");
+                throw new BusinessException("商品正在被抢购，请稍后重试");
             }
-            // 1. 远程调用：锁定/扣减商品库存 (RPC)
+
+            // =========================
+            // FIX 3：远程锁库存
+            // =========================
             ensureSuccess(itemClient.lockItem(itemId), "锁定商品失败");
-            releaseRemoteItemLock = true;
-            // 2. 借助 Spring 编程式事务或内部申明式事务，只包裹本地 DB 操作
-            Order order = createOrderInLocalTransaction(userId, sellerId, item, address);
+            remoteLocked = true;
 
-            // 3. 异步发送延迟取消消息
-            // 超时自动取消
-            sendDelayMessageLazy(order);
+            // =========================
+            // FIX 4：本地事务创建订单
+            // =========================
+            Order order = createOrderInLocalTransaction(userId, item, address);
 
-            // 4. 清理缓存
-            clearOrderCache(order);
-
-            // 5. 核心：事务成功后，注册钩子释放分布式锁
+            // =========================
+            // FIX 5：事务提交后执行
+            // =========================
             TransactionSynchronizationManager.registerSynchronization(
                     new TransactionSynchronization() {
                         @Override
-                        public void afterCompletion(int status) {
-                            if (lock.isHeldByCurrentThread()) {
-                                lock.unlock();
-                            }
+                        public void afterCommit() {
+                            sendDelayMessageLazy(order);
+                            clearOrderCache(order);
                         }
                     }
             );
@@ -184,20 +203,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return vo;
 
         } catch (InterruptedException e) {
+
             Thread.currentThread().interrupt();
-            rollbackRemoteLockQuietly(releaseRemoteItemLock, itemId);
-            // 异常发生且事务未成功，当前线程立刻释放锁
+            rollbackRemoteLockQuietly(remoteLocked, itemId);
             unlockQuietly(isLock, lock);
             throw new BusinessException("系统繁忙，请稍后再试");
+
         } catch (Exception e) {
-            log.error("订单创建异常, itemId={}", itemId, e);
-            rollbackRemoteLockQuietly(releaseRemoteItemLock, itemId);
+
+            log.error("订单创建异常 itemId={}", itemId, e);
+
+            rollbackRemoteLockQuietly(remoteLocked, itemId);
             unlockQuietly(isLock, lock);
+
             if (e instanceof BusinessException) {
                 throw (BusinessException) e;
             }
+
             throw new BusinessException("订单创建失败，请稍后重试");
-        }finally {
+
+        } finally {
+
             if (isLock && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
@@ -205,16 +231,31 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
     //A.2 辅助方法：在本地事务创建订单
     @Transactional(rollbackFor = Exception.class)
-    public Order createOrderInLocalTransaction(Long userId, Long sellerId, OrderItemDTO item, UserAddressDTO address) {
+    public Order createOrderInLocalTransaction(
+            Long userId,
+            ItemTradeDTO item,
+            UserAddressDTO address) {
+
         BigDecimal itemPrice = item.getPrice();
-        BigDecimal shippingFee = (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
-                ? BigDecimal.ZERO
-                : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
+
+        BigDecimal shippingFee =
+                (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
+                        ? BigDecimal.ZERO
+                        : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
+
         String orderNo = SerialNoUtil.generateOrderNo();
+
+        // =========================
+        // FIX 6：构建稳定 snapshot
+        // =========================
+        ItemSnapshotDTO snapshot = buildItemSnapshot(item);
+
+        validateSnapshot(snapshot);
+
         Order order = new Order()
                 .setBuyerId(userId)
-                .setSellerId(sellerId)
-                .setItemId(item.getId())
+                .setSellerId(item.getSellerId())
+                .setItemId(item.getItemId())
                 .setPrice(itemPrice)
                 .setQuantity(1)
                 .setShippingFee(shippingFee)
@@ -222,7 +263,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .setStatus(OrderStatusConstant.WAIT_PAY)
                 .setCreatedAt(LocalDateTime.now())
                 .setOrderNo(orderNo)
-                .setItemSnapshot(buildItemSnapshot(item));
+
+                // =========================
+                // FIX 7：核心快照
+                // =========================
+                .setItemSnapshot(snapshot);
+
         if (address != null) {
             order.setReceiverProvince(address.getProvince())
                     .setReceiverCity(address.getCity())
@@ -231,10 +277,44 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                     .setReceiverPhone(address.getReceiverPhone())
                     .setReceiverName(address.getReceiverName());
         }
+
         orderMapper.insert(order);
         return order;
     }
-    //A.3 辅助方法：发送超时未支付取消订单延时消息
+    //A.3辅助方法：构建商品快照
+    private ItemSnapshotDTO buildItemSnapshot(ItemTradeDTO item) {
+
+        ItemSnapshotDTO snapshot = new ItemSnapshotDTO();
+
+        snapshot.setItemId(item.getItemId());
+        snapshot.setSkuId(item.getSkuId());
+
+        snapshot.setTitle(item.getTitle());
+        snapshot.setDescription(item.getDescription());
+
+        snapshot.setPrice(item.getPrice());
+        snapshot.setCurrency("CNY");
+
+        snapshot.setSkuName(item.getSkuName());
+
+        // =========================
+        // FIX 8：主图兜底
+        // =========================
+        if (item.getImages() != null && !item.getImages().isEmpty()) {
+            snapshot.setMainImage(item.getImages().get(0));
+            snapshot.setImages(item.getImages());
+        }
+
+        snapshot.setCategoryId(item.getCategoryId());
+        snapshot.setCategoryName(item.getCategoryName());
+
+        snapshot.setSellerId(item.getSellerId());
+
+        snapshot.setAttributes(item.getAttributes());
+
+        return snapshot;
+    }
+    //A.4 辅助方法：发送超时未支付取消订单延时消息
     private void sendDelayMessageLazy(Order order) {
         try {
             orderCancelDelaySender.sendDelayCancelMessage(order.getOrderNo(), order.getId());
@@ -242,7 +322,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             log.error("订单 {} 延迟消息发送失败，依赖调度兜底", order.getOrderNo(), e);
         }
     }
-    //A.4 辅助方法：回滚
+    //A.4 校验函数:
+    private void validateSnapshot(ItemSnapshotDTO snapshot) {
+
+        if (snapshot.getTitle() == null) {
+            throw new BusinessException("商品标题不能为空");
+        }
+
+        if (snapshot.getPrice() == null) {
+            throw new BusinessException("商品价格不能为空");
+        }
+
+        if (snapshot.getItemId() == null) {
+            throw new BusinessException("商品ID不能为空");
+        }
+    }
+    //A.5 辅助方法：回滚
     private void rollbackRemoteLockQuietly(boolean needRollback, Long itemId) {
         if (needRollback) {
             try {
@@ -253,7 +348,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
     }
 
-    //A.5 辅助方法：释放锁
+    //A.6 辅助方法：释放锁
     private void unlockQuietly(boolean isLock, RLock lock) {
         if (isLock && lock.isHeldByCurrentThread()) {
             try { lock.unlock(); } catch (Exception ignored) {}

@@ -1,7 +1,7 @@
 package com.u.item.controller;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.u.api.dto.item.OrderItemDTO;
+import com.u.api.dto.item.ItemTradeDTO;
 import com.u.api.internal.item.InternalOrderItemApi;
 import com.u.common.constant.ItemStatusConstant;
 import com.u.common.constant.RedisConstant;
@@ -27,7 +27,7 @@ public class InternalOrderItemController implements InternalOrderItemApi {
     private final IItemService itemService;
     private final ItemEsSender itemEsSender;
     private final StringRedisTemplate stringRedisTemplate;
-
+/*
     @Override
     public Result<OrderItemDTO> getOrderItem(Long id) {
         Item item = itemService.getById(id);
@@ -42,7 +42,7 @@ public class InternalOrderItemController implements InternalOrderItemApi {
         }
         return Result.success(vo);
     }
-
+*/
     @Override
     public Result<Void> lockItem(Long id) {
         updateStatus(id, ItemStatusConstant.ON_SALE, ItemStatusConstant.LOCKED, "宝贝已售出或正在被他人购买中");
@@ -61,6 +61,20 @@ public class InternalOrderItemController implements InternalOrderItemApi {
         return Result.success();
     }
 
+    @Override
+    public Result<ItemTradeDTO> getItemTrade(Long id) {
+        Item item = itemService.getById(id);
+        if (item == null || Integer.valueOf(1).equals(item.getIsDeleted())) {
+            throw new BusinessException("商品不存在");
+        }
+        ItemTradeDTO vo = new ItemTradeDTO();
+        BeanUtils.copyProperties(item, vo);
+        if (item.getImages() != null && !item.getImages().isEmpty()) {
+            vo.setImages(List.of(item.getImages().split(",")));
+        }
+        return Result.success(vo);
+    }
+
     private void updateStatus(Long id, Integer fromStatus, Integer toStatus, String errorMessage) {
         boolean updated = itemService.update(new LambdaUpdateWrapper<Item>()
                 .eq(Item::getId, id)
@@ -77,4 +91,5 @@ public class InternalOrderItemController implements InternalOrderItemApi {
         }
         stringRedisTemplate.delete(RedisConstant.ITEM_DETAIL + id);
     }
+
 }

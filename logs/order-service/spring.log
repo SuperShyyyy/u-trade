@@ -155,3 +155,446 @@
 14:45:50:567  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
 14:45:50:591  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
 14:45:50:601  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+16:04:34:401  INFO 25620 --- [order-service] [main] com.u.order.OrderServiceApplication      : Starting OrderServiceApplication using Java 17.0.17 with PID 25620 (E:\T\u-trade\order-service\target\classes started by zhao in E:\T\u-trade)
+16:04:34:410  INFO 25620 --- [order-service] [main] com.u.order.OrderServiceApplication      : No active profile set, falling back to 1 default profile: "default"
+16:04:34:448  INFO 25620 --- [order-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
+16:04:35:460  INFO 25620 --- [order-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+16:04:35:462  INFO 25620 --- [order-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+16:04:35:492  INFO 25620 --- [order-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 15 ms. Found 0 Redis repository interfaces.
+16:04:35:702  INFO 25620 --- [order-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=7982663a-3c74-32b5-a086-cb957eca259d
+16:04:36:225  WARN 25620 --- [order-service] [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). The currently created BeanPostProcessor [lbRestClientPostProcessor] is declared through a non-static factory method on that class; consider declaring it as static instead.
+16:04:36:233  WARN 25620 --- [order-service] [main] trationDelegate$BeanPostProcessorChecker : Bean 'deferringLoadBalancerInterceptor' of type [org.springframework.cloud.client.loadbalancer.DeferringLoadBalancerInterceptor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [lbRestClientPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+16:04:36:452  INFO 25620 --- [order-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8084 (http)
+16:04:36:465  INFO 25620 --- [order-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+16:04:36:466  INFO 25620 --- [order-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+16:04:36:529  INFO 25620 --- [order-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+16:04:36:529  INFO 25620 --- [order-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2080 ms
+16:04:37:357  INFO 25620 --- [order-service] [main] o.s.c.openfeign.FeignClientFactoryBean   : For 'item-service' URL not provided. Will try picking an instance via load-balancing.
+16:04:37:414  INFO 25620 --- [order-service] [main] o.s.c.openfeign.FeignClientFactoryBean   : For 'user-service' URL not provided. Will try picking an instance via load-balancing.
+16:04:37:430  INFO 25620 --- [order-service] [main] o.s.c.openfeign.FeignClientFactoryBean   : For 'wallet-service' URL not provided. Will try picking an instance via load-balancing.
+16:04:37:629  INFO 25620 --- [order-service] [main] org.redisson.Version                     : Redisson 3.27.2
+16:04:37:903  INFO 25620 --- [order-service] [redisson-netty-1-5] o.redisson.connection.ConnectionsHolder  : 1 connections initialized for localhost/127.0.0.1:6379
+16:04:37:949  INFO 25620 --- [order-service] [redisson-netty-1-20] o.redisson.connection.ConnectionsHolder  : 24 connections initialized for localhost/127.0.0.1:6379
+16:04:38:503  INFO 25620 --- [order-service] [main] com.u.order.config.WebMvcConfiguration   : 开始注册自定义拦截器...
+16:04:39:850  INFO 25620 --- [order-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+16:04:41:458  INFO 25620 --- [order-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+16:04:41:477  WARN 25620 --- [order-service] [main] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+16:04:41:493  INFO 25620 --- [order-service] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+16:04:41:590  INFO 25620 --- [order-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8084 (http) with context path '/'
+16:04:41:594  INFO 25620 --- [order-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
+16:04:41:594  INFO 25620 --- [order-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+16:04:41:601  INFO 25620 --- [order-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
+16:04:41:605  INFO 25620 --- [order-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+16:04:41:608  INFO 25620 --- [order-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+16:04:41:608  INFO 25620 --- [order-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+16:04:41:612  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of 2b6655ca-cc8e-45d2-a45b-b9a6b73336e0
+16:04:41:613  INFO 25620 --- [order-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->2b6655ca-cc8e-45d2-a45b-b9a6b73336e0
+16:04:41:613  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
+16:04:41:613  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+16:04:41:614  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+16:04:41:614  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
+16:04:41:614  INFO 25620 --- [order-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
+16:04:41:729  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1779869082006_192.168.150.1_52811
+16:04:41:729  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+16:04:41:729  INFO 25620 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$356/0x000002b0a13b7750
+16:04:41:729  INFO 25620 --- [order-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Notify connected event to listeners.
+16:04:41:729  INFO 25620 --- [order-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
+16:04:41:730  INFO 25620 --- [order-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service order-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8084, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
+16:04:41:748  INFO 25620 --- [order-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP order-service 192.168.150.1:8084 register finished
+16:04:42:813  INFO 25620 --- [order-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+16:04:42:814  INFO 25620 --- [order-service] [main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [192.168.150.101:5672]
+16:04:42:902  INFO 25620 --- [order-service] [main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#626edbe0:0/SimpleConnection@451d6bc9 [delegate=amqp://zhao@192.168.150.101:5672/, localPort=52814]
+16:04:42:993  INFO 25620 --- [order-service] [main] com.u.order.OrderServiceApplication      : Started OrderServiceApplication in 11.298 seconds (process running for 11.958)
+16:04:43:001  INFO 25620 --- [order-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
+16:04:43:001  INFO 25620 --- [order-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
+16:04:43:002  INFO 25620 --- [order-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
+16:04:43:008  INFO 25620 --- [order-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
+16:04:43:008  INFO 25620 --- [order-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
+16:04:43:344  INFO 25620 --- [order-service] [RMI TCP Connection(1)-192.168.150.1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+16:04:43:352  INFO 25620 --- [order-service] [RMI TCP Connection(4)-192.168.150.1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+16:04:43:352  INFO 25620 --- [order-service] [RMI TCP Connection(4)-192.168.150.1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+16:04:43:354  INFO 25620 --- [order-service] [RMI TCP Connection(4)-192.168.150.1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 0 ms
+16:04:43:544  INFO 25620 --- [order-service] [RMI TCP Connection(1)-192.168.150.1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@39f7dcd7
+16:04:43:547  INFO 25620 --- [order-service] [RMI TCP Connection(1)-192.168.150.1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+16:06:00:004  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:06:00.004157200] ==========
+16:06:00:029  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:09:00:002  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:09:00.002200900] ==========
+16:09:00:003  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:11:02:123  INFO 25620 --- [order-service] [http-nio-8084-exec-5] com.u.order.controller.OrderController   : 用户下单：itemId=20
+16:11:02:163  WARN 25620 --- [order-service] [http-nio-8084-exec-5] c.l.c.ServiceInstanceListSupplierBuilder : LoadBalancerCacheManager not available, returning delegate without caching.
+16:11:02:175  INFO 25620 --- [order-service] [http-nio-8084-exec-5] com.alibaba.nacos.client.naming          : [SUBSCRIBE-SERVICE] service:item-service, group:DEFAULT_GROUP, clusters: 
+16:11:02:175  INFO 25620 --- [order-service] [http-nio-8084-exec-5] com.alibaba.nacos.client.naming          : [GRPC-SUBSCRIBE] service:item-service, group:DEFAULT_GROUP, cluster: 
+16:11:02:184  INFO 25620 --- [order-service] [http-nio-8084-exec-5] com.alibaba.nacos.client.naming          : init new ips(0) service: DEFAULT_GROUP@@item-service -> []
+16:11:02:185  INFO 25620 --- [order-service] [http-nio-8084-exec-5] com.alibaba.nacos.client.naming          : current ips:(0) service: DEFAULT_GROUP@@item-service -> []
+16:11:02:190  WARN 25620 --- [order-service] [http-nio-8084-exec-5] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: item-service
+16:11:02:192  WARN 25620 --- [order-service] [http-nio-8084-exec-5] RetryableFeignBlockingLoadBalancerClient : Service instance was not resolved, executing the original request
+16:11:02:697  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-89] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 25
+16:11:02:698  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-89] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 25
+16:11:04:459  WARN 25620 --- [order-service] [http-nio-8084-exec-5] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: item-service
+16:11:04:459  WARN 25620 --- [order-service] [http-nio-8084-exec-5] RetryableFeignBlockingLoadBalancerClient : Service instance was not resolved, executing the original request
+16:11:04:466 ERROR 25620 --- [order-service] [http-nio-8084-exec-5] c.u.c.exception.GlobalExceptionHandler   : 系统异常
+
+feign.RetryableException: item-service executing GET http://item-service/inner/order/items/20
+	at feign.FeignException.errorExecuting(FeignException.java:278) ~[feign-core-13.2.1.jar:na]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:110) ~[feign-core-13.2.1.jar:na]
+	at feign.SynchronousMethodHandler.invoke(SynchronousMethodHandler.java:70) ~[feign-core-13.2.1.jar:na]
+	at feign.ReflectiveFeign$FeignInvocationHandler.invoke(ReflectiveFeign.java:99) ~[feign-core-13.2.1.jar:na]
+	at jdk.proxy2/jdk.proxy2.$Proxy126.getOrderItem(Unknown Source) ~[na:na]
+	at com.u.order.service.impl.OrderServiceImpl.orderSubmit(OrderServiceImpl.java:123) ~[classes/:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379) ~[spring-tx-6.1.13.jar:6.1.13]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720) ~[spring-aop-6.1.13.jar:6.1.13]
+	at com.u.order.service.impl.OrderServiceImpl$$SpringCGLIB$$0.orderSubmit(<generated>) ~[classes/:na]
+	at com.u.order.controller.OrderController.submit(OrderController.java:37) ~[classes/:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.30.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.30.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:113) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at java.base/java.lang.Thread.run(Thread.java:842) ~[na:na]
+Caused by: java.net.UnknownHostException: item-service
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:572) ~[na:na]
+	at java.base/java.net.Socket.connect(Socket.java:633) ~[na:na]
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:534) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:639) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:284) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:387) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:409) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1325) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1258) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1144) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1073) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1703) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1627) ~[na:na]
+	at java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529) ~[na:na]
+	at feign.Client$Default.convertResponse(Client.java:111) ~[feign-core-13.2.1.jar:na]
+	at feign.Client$Default.execute(Client.java:107) ~[feign-core-13.2.1.jar:na]
+	at org.springframework.cloud.openfeign.loadbalancer.LoadBalancerUtils.executeWithLoadBalancerLifecycleProcessing(LoadBalancerUtils.java:56) ~[spring-cloud-openfeign-core-4.1.1.jar:4.1.1]
+	at org.springframework.cloud.openfeign.loadbalancer.RetryableFeignBlockingLoadBalancerClient.lambda$execute$2(RetryableFeignBlockingLoadBalancerClient.java:189) ~[spring-cloud-openfeign-core-4.1.1.jar:4.1.1]
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:344) ~[spring-retry-2.0.9.jar:na]
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:233) ~[spring-retry-2.0.9.jar:na]
+	at org.springframework.cloud.openfeign.loadbalancer.RetryableFeignBlockingLoadBalancerClient.execute(RetryableFeignBlockingLoadBalancerClient.java:136) ~[spring-cloud-openfeign-core-4.1.1.jar:4.1.1]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:100) ~[feign-core-13.2.1.jar:na]
+	... 73 common frames omitted
+
+16:11:13:833  INFO 25620 --- [order-service] [http-nio-8084-exec-6] com.u.order.controller.OrderController   : 用户下单：itemId=20
+16:11:13:835  WARN 25620 --- [order-service] [http-nio-8084-exec-6] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: item-service
+16:11:13:835  WARN 25620 --- [order-service] [http-nio-8084-exec-6] RetryableFeignBlockingLoadBalancerClient : Service instance was not resolved, executing the original request
+16:11:13:836  WARN 25620 --- [order-service] [http-nio-8084-exec-6] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: item-service
+16:11:13:836  WARN 25620 --- [order-service] [http-nio-8084-exec-6] RetryableFeignBlockingLoadBalancerClient : Service instance was not resolved, executing the original request
+16:11:13:838 ERROR 25620 --- [order-service] [http-nio-8084-exec-6] c.u.c.exception.GlobalExceptionHandler   : 系统异常
+
+feign.RetryableException: item-service executing GET http://item-service/inner/order/items/20
+	at feign.FeignException.errorExecuting(FeignException.java:278) ~[feign-core-13.2.1.jar:na]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:110) ~[feign-core-13.2.1.jar:na]
+	at feign.SynchronousMethodHandler.invoke(SynchronousMethodHandler.java:70) ~[feign-core-13.2.1.jar:na]
+	at feign.ReflectiveFeign$FeignInvocationHandler.invoke(ReflectiveFeign.java:99) ~[feign-core-13.2.1.jar:na]
+	at jdk.proxy2/jdk.proxy2.$Proxy126.getOrderItem(Unknown Source) ~[na:na]
+	at com.u.order.service.impl.OrderServiceImpl.orderSubmit(OrderServiceImpl.java:123) ~[classes/:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379) ~[spring-tx-6.1.13.jar:6.1.13]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768) ~[spring-aop-6.1.13.jar:6.1.13]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720) ~[spring-aop-6.1.13.jar:6.1.13]
+	at com.u.order.service.impl.OrderServiceImpl$$SpringCGLIB$$0.orderSubmit(<generated>) ~[classes/:na]
+	at com.u.order.controller.OrderController.submit(OrderController.java:37) ~[classes/:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.30.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.13.jar:6.1.13]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.30.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:113) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
+	at java.base/java.lang.Thread.run(Thread.java:842) ~[na:na]
+Caused by: java.net.UnknownHostException: item-service
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:572) ~[na:na]
+	at java.base/java.net.Socket.connect(Socket.java:633) ~[na:na]
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:534) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:639) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:284) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:387) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:409) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1325) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1258) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1144) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1073) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1703) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1627) ~[na:na]
+	at java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:529) ~[na:na]
+	at feign.Client$Default.convertResponse(Client.java:111) ~[feign-core-13.2.1.jar:na]
+	at feign.Client$Default.execute(Client.java:107) ~[feign-core-13.2.1.jar:na]
+	at org.springframework.cloud.openfeign.loadbalancer.LoadBalancerUtils.executeWithLoadBalancerLifecycleProcessing(LoadBalancerUtils.java:56) ~[spring-cloud-openfeign-core-4.1.1.jar:4.1.1]
+	at org.springframework.cloud.openfeign.loadbalancer.RetryableFeignBlockingLoadBalancerClient.lambda$execute$2(RetryableFeignBlockingLoadBalancerClient.java:189) ~[spring-cloud-openfeign-core-4.1.1.jar:4.1.1]
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:344) ~[spring-retry-2.0.9.jar:na]
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:233) ~[spring-retry-2.0.9.jar:na]
+	at org.springframework.cloud.openfeign.loadbalancer.RetryableFeignBlockingLoadBalancerClient.execute(RetryableFeignBlockingLoadBalancerClient.java:136) ~[spring-cloud-openfeign-core-4.1.1.jar:4.1.1]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:100) ~[feign-core-13.2.1.jar:na]
+	... 73 common frames omitted
+
+16:12:00:011  INFO 25620 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:12:00.011621700] ==========
+16:12:00:013  INFO 25620 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:12:11:443  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-102] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 28
+16:12:11:444  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-102] com.alibaba.nacos.client.naming          : new ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:12:11:444  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-102] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:12:11:444  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-102] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 28
+16:15:00:001  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:15:00.001588100] ==========
+16:15:00:002  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:18:00:007  INFO 25620 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:18:00.007926100] ==========
+16:18:00:009  INFO 25620 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:21:00:012  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:21:00.012615400] ==========
+16:21:00:013  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:24:00:015  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:24:00.015478900] ==========
+16:24:00:017  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:27:00:006  INFO 25620 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:27:00.006746700] ==========
+16:27:00:008  INFO 25620 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:30:00:006  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:30:00.006766] ==========
+16:30:00:007  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:33:00:005  INFO 25620 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:33:00.005079200] ==========
+16:33:00:007  INFO 25620 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:36:00:007  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:36:00.007854] ==========
+16:36:00:009  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:39:00:006  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:39:00.006258300] ==========
+16:39:00:008  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:42:00:010  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:42:00.010294] ==========
+16:42:00:012  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:42:39:448  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-451] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 31
+16:42:39:448  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-451] com.alibaba.nacos.client.naming          : removed ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:42:39:449  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-451] com.alibaba.nacos.client.naming          : current ips:(0) service: DEFAULT_GROUP@@item-service -> []
+16:42:39:449  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-451] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 31
+16:42:52:042  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-454] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 34
+16:42:52:042  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-454] com.alibaba.nacos.client.naming          : new ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:42:52:043  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-454] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:42:52:043  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-454] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 34
+16:43:53:663  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-465] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 36
+16:43:53:663  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-465] com.alibaba.nacos.client.naming          : removed ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:43:53:663  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-465] com.alibaba.nacos.client.naming          : current ips:(0) service: DEFAULT_GROUP@@item-service -> []
+16:43:53:664  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-465] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 36
+16:44:04:727  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-468] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 39
+16:44:04:727  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-468] com.alibaba.nacos.client.naming          : new ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:44:04:727  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-468] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:44:04:728  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-468] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 39
+16:45:00:001  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:45:00.001631800] ==========
+16:45:00:002  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:47:20:180  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-505] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 41
+16:47:20:180  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-505] com.alibaba.nacos.client.naming          : removed ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:47:20:181  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-505] com.alibaba.nacos.client.naming          : current ips:(0) service: DEFAULT_GROUP@@item-service -> []
+16:47:20:181  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-505] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 41
+16:47:32:751  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-507] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 44
+16:47:32:751  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-507] com.alibaba.nacos.client.naming          : new ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:47:32:753  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-507] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:47:32:754  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-507] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 44
+16:48:00:012  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:48:00.012091100] ==========
+16:48:00:013  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:50:54:200  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-545] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 46
+16:50:54:201  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-545] com.alibaba.nacos.client.naming          : removed ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:50:54:201  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-545] com.alibaba.nacos.client.naming          : current ips:(0) service: DEFAULT_GROUP@@item-service -> []
+16:50:54:202  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-545] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 46
+16:51:00:002  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:51:00.002893500] ==========
+16:51:00:004  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:51:06:489  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-549] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 49
+16:51:06:489  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-549] com.alibaba.nacos.client.naming          : new ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:51:06:489  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-549] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:51:06:491  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-549] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 49
+16:54:00:002  INFO 25620 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:54:00.002958400] ==========
+16:54:00:004  INFO 25620 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+16:54:26:764  INFO 25620 --- [order-service] [http-nio-8084-exec-8] com.u.order.controller.OrderController   : 用户下单：itemId=20
+16:54:26:919  WARN 25620 --- [order-service] [http-nio-8084-exec-8] c.l.c.ServiceInstanceListSupplierBuilder : LoadBalancerCacheManager not available, returning delegate without caching.
+16:54:26:922  INFO 25620 --- [order-service] [http-nio-8084-exec-8] com.alibaba.nacos.client.naming          : [SUBSCRIBE-SERVICE] service:user-service, group:DEFAULT_GROUP, clusters: 
+16:54:26:922  INFO 25620 --- [order-service] [http-nio-8084-exec-8] com.alibaba.nacos.client.naming          : [GRPC-SUBSCRIBE] service:user-service, group:DEFAULT_GROUP, cluster: 
+16:54:26:924  INFO 25620 --- [order-service] [http-nio-8084-exec-8] com.alibaba.nacos.client.naming          : init new ips(1) service: DEFAULT_GROUP@@user-service -> [{"ip":"192.168.150.1","port":8081,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@user-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:54:26:926  INFO 25620 --- [order-service] [http-nio-8084-exec-8] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@user-service -> [{"ip":"192.168.150.1","port":8081,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@user-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatInterval":5000,"instanceHeartBeatTimeOut":15000,"ipDeleteTimeout":30000}]
+16:54:27:439  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-588] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Receive server push request, request = NotifySubscriberRequest, requestId = 50
+16:54:27:439  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-588] com.alibaba.nacos.common.remote.client   : [2b6655ca-cc8e-45d2-a45b-b9a6b73336e0] Ack server push request, request = NotifySubscriberRequest, requestId = 50
+16:57:00:014  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T16:57:00.014064300] ==========
+16:57:00:015  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:00:00:004  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:00:00.004309500] ==========
+17:00:00:004  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:03:00:008  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:03:00.008403400] ==========
+17:03:00:009  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:06:00:016  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:06:00.016293100] ==========
+17:06:00:017  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:09:00:009  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:09:00.009240900] ==========
+17:09:00:010  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:12:00:002  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:12:00.002174800] ==========
+17:12:00:003  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:15:00:011  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:15:00.011671700] ==========
+17:15:00:022  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:18:00:000  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:18:00.000851] ==========
+17:18:00:002  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:21:00:002  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:21:00.002728800] ==========
+17:21:00:003  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:24:00:008  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:24:00.008205200] ==========
+17:24:00:009  INFO 25620 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:24:27:113  INFO 25620 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.u.o.mq.listener.OrderCancelListener    : 收到延迟取消消息: orderId=4, orderNo=ORD20260527165427047336477
+17:24:27:188  INFO 25620 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.u.o.mq.listener.OrderCancelListener    : 订单 ORD20260527165427047336477 自动取消成功
+17:27:00:000  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:27:00.000649700] ==========
+17:27:00:001  INFO 25620 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:30:00:008  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:30:00.008852700] ==========
+17:30:00:009  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:33:00:011  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:33:00.011114800] ==========
+17:33:00:011  INFO 25620 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:36:00:015  INFO 25620 --- [order-service] [scheduled-task-3] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:36:00.015391800] ==========
+17:36:00:039  INFO 25620 --- [order-service] [scheduled-task-3] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:39:00:014  INFO 25620 --- [order-service] [scheduled-task-3] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:39:00.014440300] ==========
+17:39:00:015  INFO 25620 --- [order-service] [scheduled-task-3] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:42:00:010  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:42:00.010388800] ==========
+17:42:00:011  INFO 25620 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:45:00:011  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:45:00.011767600] ==========
+17:45:00:012  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:48:00:016  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:48:00.016446800] ==========
+17:48:00:017  INFO 25620 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:51:00:001  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T17:51:00.001719100] ==========
+17:51:00:008  INFO 25620 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+17:52:26:353  WARN 25620 --- [order-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+17:52:26:353  WARN 25620 --- [order-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+17:52:26:354  WARN 25620 --- [order-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
+17:52:26:357  WARN 25620 --- [order-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
+17:52:26:405  INFO 25620 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+17:52:26:406  INFO 25620 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#1-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+17:52:26:416  INFO 25620 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#1-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+17:52:26:570  INFO 25620 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+17:52:26:862  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
+17:52:26:864  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service order-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8084, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
+17:52:26:876  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
+17:52:26:879  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+17:52:26:879  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+17:52:26:880  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+17:52:26:880  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+17:52:26:880  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+17:52:26:881  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+17:52:26:881  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+17:52:26:881  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
+17:52:26:881  WARN 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+17:52:26:882  WARN 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+17:52:26:882  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
+17:52:26:882  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+17:52:26:882  WARN 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+17:52:26:882  WARN 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+17:52:26:882  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+17:52:26:882  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->2b6655ca-cc8e-45d2-a45b-b9a6b73336e0
+17:52:26:883  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@539021fd[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 2150]
+17:52:26:883  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
+17:52:26:883  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@378ee5bd[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+17:52:26:883  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1779869082006_192.168.150.1_52811
+17:52:26:886  INFO 25620 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-1251] c.a.n.c.remote.client.grpc.GrpcClient    : [1779869082006_192.168.150.1_52811]Ignore complete event,isRunning:false,isAbandon=false
+17:52:26:900  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@5d21df6b[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 1252]
+17:52:26:900  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->2b6655ca-cc8e-45d2-a45b-b9a6b73336e0
+17:52:26:901  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
+17:52:26:901  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
+17:52:26:902  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
+17:52:26:957  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+17:52:26:971  INFO 25620 --- [order-service] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

@@ -26,7 +26,7 @@ public class ItemSnapshotDTO {
     // ======================
     // 图片信息（必须）
     // ======================
-
+    private String mainImage;
     private List<String> images;  // 图片列表（第一张做主图）
 
     // ======================
