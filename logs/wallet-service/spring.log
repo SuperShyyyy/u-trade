@@ -1,0 +1,73 @@
+13:43:10:934  INFO 8444 --- [wallet-service] [main] com.u.wallet.WalletServiceApplication    : Starting WalletServiceApplication using Java 17.0.17 with PID 8444 (E:\T\u-trade\wallet-service\target\classes started by zhao in E:\T\u-trade)
+13:43:10:938  INFO 8444 --- [wallet-service] [main] com.u.wallet.WalletServiceApplication    : No active profile set, falling back to 1 default profile: "default"
+13:43:10:974  INFO 8444 --- [wallet-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
+13:43:11:909  INFO 8444 --- [wallet-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=53372db3-4eb5-3c60-a4a8-325181cf234b
+13:43:12:295  INFO 8444 --- [wallet-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8082 (http)
+13:43:12:308  INFO 8444 --- [wallet-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+13:43:12:308  INFO 8444 --- [wallet-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+13:43:12:375  INFO 8444 --- [wallet-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+13:43:12:375  INFO 8444 --- [wallet-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1399 ms
+13:43:13:125  INFO 8444 --- [wallet-service] [main] c.u.wallet.config.WebMvcConfiguration    : 开始注册自定义拦截器...
+13:43:14:435  INFO 8444 --- [wallet-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+13:43:15:969  INFO 8444 --- [wallet-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+13:43:16:042  INFO 8444 --- [wallet-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8082 (http) with context path '/'
+13:43:16:047  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
+13:43:16:048  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+13:43:16:049  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
+13:43:16:054  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+13:43:16:058  INFO 8444 --- [wallet-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+13:43:16:058  INFO 8444 --- [wallet-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+13:43:16:061  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of 7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6
+13:43:16:064  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6
+13:43:16:064  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
+13:43:16:064  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+13:43:16:065  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+13:43:16:065  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
+13:43:16:066  INFO 8444 --- [wallet-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
+13:43:16:186  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1779860596436_192.168.150.1_53025
+13:43:16:186  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+13:43:16:186  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$355/0x00000184a43b6ff8
+13:43:16:186  INFO 8444 --- [wallet-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6] Notify connected event to listeners.
+13:43:16:186  INFO 8444 --- [wallet-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
+13:43:16:187  INFO 8444 --- [wallet-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service wallet-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8082, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
+13:43:16:196  INFO 8444 --- [wallet-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP wallet-service 192.168.150.1:8082 register finished
+13:43:17:267  INFO 8444 --- [wallet-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+13:43:17:276  INFO 8444 --- [wallet-service] [main] com.u.wallet.WalletServiceApplication    : Started WalletServiceApplication in 8.848 seconds (process running for 9.539)
+13:43:17:283  INFO 8444 --- [wallet-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
+13:43:17:283  INFO 8444 --- [wallet-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
+13:43:17:284  INFO 8444 --- [wallet-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
+13:43:17:291  INFO 8444 --- [wallet-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
+13:43:17:292  INFO 8444 --- [wallet-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
+14:45:49:598  WARN 8444 --- [wallet-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+14:45:49:598  WARN 8444 --- [wallet-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+14:45:49:608  WARN 8444 --- [wallet-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
+14:45:49:611  WARN 8444 --- [wallet-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
+14:45:49:898  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
+14:45:49:900  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service wallet-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8082, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
+14:45:49:916  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
+14:45:49:917  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+14:45:49:917  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+14:45:49:918  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+14:45:49:918  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+14:45:49:918  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+14:45:49:918  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+14:45:49:918  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+14:45:49:918  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
+14:45:49:918  WARN 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+14:45:49:919  WARN 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+14:45:49:919  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
+14:45:49:919  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+14:45:49:919  WARN 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+14:45:49:919  WARN 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+14:45:49:919  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+14:45:49:919  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6
+14:45:49:920  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@7f4ccbb3[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 1248]
+14:45:49:920  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
+14:45:49:920  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@4933e607[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+14:45:49:921  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1779860596436_192.168.150.1_53025
+14:45:49:925  INFO 8444 --- [wallet-service] [nacos-grpc-client-executor-192.168.150.101-728] c.a.n.c.remote.client.grpc.GrpcClient    : [1779860596436_192.168.150.1_53025]Ignore complete event,isRunning:false,isAbandon=false
+14:45:49:930  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@bff2814[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 729]
+14:45:49:931  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->7870dfb4-fc6d-40c6-aa0c-a29db8ebdfd6
+14:45:49:931  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
+14:45:49:931  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
+14:45:49:931  INFO 8444 --- [wallet-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop

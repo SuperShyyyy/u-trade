@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat WebSocket MVP 测试</title>
+    <style>
+        body { font-family: sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; }
+        fieldset { margin-bottom: 16px; }
+        input, textarea, button { margin: 4px 0; width: 100%; box-sizing: border-box; }
+        #log { background: #111; color: #0f0; padding: 12px; height: 260px; overflow-y: auto; font-family: monospace; font-size: 13px; }
+    </style>
+</head>
+<body>
+<h2>二手聊天 WebSocket MVP</h2>
+<p>连接方式（二选一）：</p>
+<ul>
+    <li><code>ws://localhost:8086/ws/chat?userId={userId}</code> — 开发测试</li>
+    <li><code>ws://localhost:8086/ws/chat?token={jwt}</code> — 生产（JWT 来自 /user/login）</li>
+</ul>
+
+<fieldset>
+    <legend>连接</legend>
+    <label>userId <input id="userId" type="number" value="1"></label>
+    <label>token（可选，填写后优先使用 token） <input id="token" type="text" placeholder="留空则使用 userId"></label>
+    <button id="connectBtn">连接</button>
+    <button id="disconnectBtn">断开</button>
+</fieldset>
+
+<fieldset>
+    <legend>发送消息</legend>
+    <label>receiverId <input id="receiverId" type="number" value="2"></label>
+    <label>messageType
+        <select id="messageType">
+            <option value="text">text</option>
+            <option value="image">image</option>
+        </select>
+    </label>
+    <label>content <textarea id="content" rows="3">你好，这个商品还在吗？</textarea></label>
+    <button id="sendBtn">发送</button>
+</fieldset>
+
+<h3>消息日志</h3>
+<div id="log"></div>
+
+<script>
+    let ws = null;
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+        logEl.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    document.getElementById('connectBtn').onclick = () => {
+        const userId = document.getElementById('userId').value;
+        const token = document.getElementById('token').value.trim();
+        const url = token
+            ? `ws://localhost:8086/ws/chat?token=${encodeURIComponent(token)}`
+            : `ws://localhost:8086/ws/chat?userId=${userId}`;
+        ws = new WebSocket(url);
+        ws.onopen = () => log('已连接: ' + url);
+        ws.onclose = () => log('连接关闭');
+        ws.onerror = () => log('连接错误');
+        ws.onmessage = (e) => log('收到: ' + e.data);
+    };
+
+    document.getElementById('disconnectBtn').onclick = () => {
+        if (ws) ws.close();
+    };
+
+    document.getElementById('sendBtn').onclick = () => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            log('请先连接 WebSocket');
+            return;
+        }
+        const payload = {
+            receiverId: Number(document.getElementById('receiverId').value),
+            content: document.getElementById('content').value,
+            messageType: document.getElementById('messageType').value
+        };
+        ws.send(JSON.stringify(payload));
+        log('发送: ' + JSON.stringify(payload));
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+13:42:57:615  INFO 16996 --- [order-service] [main] com.u.order.OrderServiceApplication      : Starting OrderServiceApplication using Java 17.0.17 with PID 16996 (E:\T\u-trade\order-service\target\classes started by zhao in E:\T\u-trade)
+13:42:57:619  INFO 16996 --- [order-service] [main] com.u.order.OrderServiceApplication      : No active profile set, falling back to 1 default profile: "default"
+13:42:57:661  INFO 16996 --- [order-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
+13:42:58:872  INFO 16996 --- [order-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+13:42:58:883  INFO 16996 --- [order-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+13:42:58:914  INFO 16996 --- [order-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 17 ms. Found 0 Redis repository interfaces.
+13:42:59:158  INFO 16996 --- [order-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=7982663a-3c74-32b5-a086-cb957eca259d
+13:42:59:801  WARN 16996 --- [order-service] [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig' of type [org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). The currently created BeanPostProcessor [lbRestClientPostProcessor] is declared through a non-static factory method on that class; consider declaring it as static instead.
+13:42:59:806  WARN 16996 --- [order-service] [main] trationDelegate$BeanPostProcessorChecker : Bean 'deferringLoadBalancerInterceptor' of type [org.springframework.cloud.client.loadbalancer.DeferringLoadBalancerInterceptor] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected into a currently created BeanPostProcessor [lbRestClientPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies.
+13:43:00:100  INFO 16996 --- [order-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8084 (http)
+13:43:00:117  INFO 16996 --- [order-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+13:43:00:117  INFO 16996 --- [order-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+13:43:00:197  INFO 16996 --- [order-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+13:43:00:197  INFO 16996 --- [order-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2534 ms
+13:43:01:336  INFO 16996 --- [order-service] [main] o.s.c.openfeign.FeignClientFactoryBean   : For 'item-service' URL not provided. Will try picking an instance via load-balancing.
+13:43:01:425  INFO 16996 --- [order-service] [main] o.s.c.openfeign.FeignClientFactoryBean   : For 'user-service' URL not provided. Will try picking an instance via load-balancing.
+13:43:01:450  INFO 16996 --- [order-service] [main] o.s.c.openfeign.FeignClientFactoryBean   : For 'wallet-service' URL not provided. Will try picking an instance via load-balancing.
+13:43:01:683  INFO 16996 --- [order-service] [main] org.redisson.Version                     : Redisson 3.27.2
+13:43:02:077  INFO 16996 --- [order-service] [redisson-netty-1-5] o.redisson.connection.ConnectionsHolder  : 1 connections initialized for localhost/127.0.0.1:6379
+13:43:02:155  INFO 16996 --- [order-service] [redisson-netty-1-20] o.redisson.connection.ConnectionsHolder  : 24 connections initialized for localhost/127.0.0.1:6379
+13:43:02:753  INFO 16996 --- [order-service] [main] com.u.order.config.WebMvcConfiguration   : 开始注册自定义拦截器...
+13:43:04:083  INFO 16996 --- [order-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+13:43:05:899  INFO 16996 --- [order-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+13:43:05:936  WARN 16996 --- [order-service] [main] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+13:43:05:958  INFO 16996 --- [order-service] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+13:43:06:113  INFO 16996 --- [order-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8084 (http) with context path '/'
+13:43:06:119  INFO 16996 --- [order-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
+13:43:06:121  INFO 16996 --- [order-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+13:43:06:121  INFO 16996 --- [order-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
+13:43:06:129  INFO 16996 --- [order-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+13:43:06:136  INFO 16996 --- [order-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+13:43:06:137  INFO 16996 --- [order-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+13:43:06:144  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of e079f696-7217-4e90-ad99-6bfffc9eb80b
+13:43:06:147  INFO 16996 --- [order-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->e079f696-7217-4e90-ad99-6bfffc9eb80b
+13:43:06:148  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
+13:43:06:148  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+13:43:06:148  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+13:43:06:149  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
+13:43:06:149  INFO 16996 --- [order-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
+13:43:06:271  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1779860586522_192.168.150.1_52987
+13:43:06:271  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+13:43:06:271  INFO 16996 --- [order-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Notify connected event to listeners.
+13:43:06:271  INFO 16996 --- [order-service] [main] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$356/0x00000268a43b7750
+13:43:06:271  INFO 16996 --- [order-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
+13:43:06:273  INFO 16996 --- [order-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service order-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8084, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
+13:43:06:289  INFO 16996 --- [order-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP order-service 192.168.150.1:8084 register finished
+13:43:07:387  INFO 16996 --- [order-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+13:43:07:389  INFO 16996 --- [order-service] [main] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [192.168.150.101:5672]
+13:43:07:442  INFO 16996 --- [order-service] [main] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#7244b40e:0/SimpleConnection@1a8e209b [delegate=amqp://zhao@192.168.150.101:5672/, localPort=52988]
+13:43:07:533  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.u.o.mq.listener.OrderCancelListener    : 收到延迟取消消息: orderId=2, orderNo=ORD20260525232245700961064
+13:43:07:544  INFO 16996 --- [order-service] [main] com.u.order.OrderServiceApplication      : Started OrderServiceApplication in 12.518 seconds (process running for 13.1)
+13:43:07:559  INFO 16996 --- [order-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
+13:43:07:560  INFO 16996 --- [order-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
+13:43:07:561  INFO 16996 --- [order-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
+13:43:07:573  INFO 16996 --- [order-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
+13:43:07:573  INFO 16996 --- [order-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
+13:43:07:605  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+13:43:07:863  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@f3e8c0
+13:43:07:869  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+13:43:07:883  INFO 16996 --- [order-service] [RMI TCP Connection(1)-198.18.0.1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+13:43:07:883  INFO 16996 --- [order-service] [RMI TCP Connection(1)-198.18.0.1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+13:43:07:887  INFO 16996 --- [order-service] [RMI TCP Connection(1)-198.18.0.1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+13:43:08:178  WARN 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.l.c.ServiceInstanceListSupplierBuilder : LoadBalancerCacheManager not available, returning delegate without caching.
+13:43:08:197  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.alibaba.nacos.client.naming          : [SUBSCRIBE-SERVICE] service:item-service, group:DEFAULT_GROUP, clusters: 
+13:43:08:197  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.alibaba.nacos.client.naming          : [GRPC-SUBSCRIBE] service:item-service, group:DEFAULT_GROUP, cluster: 
+13:43:08:211  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.alibaba.nacos.client.naming          : init new ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatTimeOut":15000,"instanceHeartBeatInterval":5000,"ipDeleteTimeout":30000}]
+13:43:08:213  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] com.alibaba.nacos.client.naming          : current ips:(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatTimeOut":15000,"instanceHeartBeatInterval":5000,"ipDeleteTimeout":30000}]
+13:43:08:498  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.u.o.mq.listener.OrderCancelListener    : 订单 ORD20260525232245700961064 自动取消成功
+13:43:08:503  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.u.o.mq.listener.OrderCancelListener    : 收到延迟取消消息: orderId=3, orderNo=ORD20260525232339932215042
+13:43:08:510  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] c.u.o.mq.listener.OrderCancelListener    : 订单 ORD20260525232339932215042 当前状态为 [1]，无需自动取消 (用户已支付或已处理)，直接确认消息
+13:43:08:786  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-12] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Receive server push request, request = NotifySubscriberRequest, requestId = 2
+13:43:08:786  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-12] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Ack server push request, request = NotifySubscriberRequest, requestId = 2
+13:45:00:012  INFO 16996 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T13:45:00.011984500] ==========
+13:45:00:019  INFO 16996 --- [order-service] [scheduled-task-1] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+13:48:00:001  INFO 16996 --- [order-service] [scheduled-task-3] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T13:48:00.001813800] ==========
+13:48:00:003  INFO 16996 --- [order-service] [scheduled-task-3] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+13:51:00:008  INFO 16996 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T13:51:00.008788500] ==========
+13:51:00:010  INFO 16996 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+13:54:00:012  INFO 16996 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T13:54:00.012463200] ==========
+13:54:00:013  INFO 16996 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+13:57:00:008  INFO 16996 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T13:57:00.008485300] ==========
+13:57:00:009  INFO 16996 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:00:00:013  INFO 16996 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:00:00.013511700] ==========
+14:00:00:014  INFO 16996 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:03:00:009  INFO 16996 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:03:00.009648100] ==========
+14:03:00:010  INFO 16996 --- [order-service] [scheduled-task-5] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:06:00:015  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:06:00.015621] ==========
+14:06:00:016  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:09:00:011  INFO 16996 --- [order-service] [scheduled-task-10] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:09:00.011145600] ==========
+14:09:00:012  INFO 16996 --- [order-service] [scheduled-task-10] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:12:00:016  INFO 16996 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:12:00.016220900] ==========
+14:12:00:017  INFO 16996 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:15:00:004  INFO 16996 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:15:00.004139600] ==========
+14:15:00:005  INFO 16996 --- [order-service] [scheduled-task-8] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:18:00:005  INFO 16996 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:18:00.005277500] ==========
+14:18:00:006  INFO 16996 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:21:00:015  INFO 16996 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:21:00.015402300] ==========
+14:21:00:015  INFO 16996 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:24:00:014  INFO 16996 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:24:00.014082200] ==========
+14:24:00:015  INFO 16996 --- [order-service] [scheduled-task-9] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:27:00:014  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:27:00.014215600] ==========
+14:27:00:015  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:30:00:001  INFO 16996 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:30:00.001709] ==========
+14:30:00:002  INFO 16996 --- [order-service] [scheduled-task-7] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:33:00:002  INFO 16996 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:33:00.002063500] ==========
+14:33:00:002  INFO 16996 --- [order-service] [scheduled-task-4] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:36:00:011  INFO 16996 --- [order-service] [scheduled-task-10] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:36:00.011103800] ==========
+14:36:00:011  INFO 16996 --- [order-service] [scheduled-task-10] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:39:00:016  INFO 16996 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:39:00.016045300] ==========
+14:39:00:017  INFO 16996 --- [order-service] [scheduled-task-2] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:42:00:007  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:42:00.007626700] ==========
+14:42:00:009  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:45:00:009  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : ========== 订单自动确认任务开始 [2026-05-27T14:45:00.009865100] ==========
+14:45:00:011  INFO 16996 --- [order-service] [scheduled-task-6] com.u.order.task.OrderTask               : 没有到期订单，本次任务结束
+14:45:49:596  WARN 16996 --- [order-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+14:45:49:597  WARN 16996 --- [order-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+14:45:49:597  WARN 16996 --- [order-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
+14:45:49:601  WARN 16996 --- [order-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
+14:45:49:636  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+14:45:49:638  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#1-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+14:45:50:246  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+14:45:50:399  INFO 16996 --- [order-service] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#1-2] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+14:45:50:516  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-737] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Receive server push request, request = NotifySubscriberRequest, requestId = 20
+14:45:50:520  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-737] com.alibaba.nacos.client.naming          : removed ips(1) service: DEFAULT_GROUP@@item-service -> [{"ip":"192.168.150.1","port":8085,"weight":1.0,"healthy":true,"enabled":true,"ephemeral":true,"clusterName":"DEFAULT","serviceName":"DEFAULT_GROUP@@item-service","metadata":{"preserved.register.source":"SPRING_CLOUD"},"instanceHeartBeatTimeOut":15000,"instanceHeartBeatInterval":5000,"ipDeleteTimeout":30000}]
+14:45:50:520  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-737] com.alibaba.nacos.client.naming          : current ips:(0) service: DEFAULT_GROUP@@item-service -> []
+14:45:50:522  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-737] com.alibaba.nacos.common.remote.client   : [e079f696-7217-4e90-ad99-6bfffc9eb80b] Ack server push request, request = NotifySubscriberRequest, requestId = 20
+14:45:50:552  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
+14:45:50:552  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service order-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8084, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
+14:45:50:557  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
+14:45:50:558  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+14:45:50:558  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
+14:45:50:559  WARN 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+14:45:50:559  WARN 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+14:45:50:559  WARN 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+14:45:50:559  WARN 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->e079f696-7217-4e90-ad99-6bfffc9eb80b
+14:45:50:559  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@3b63638[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 1251]
+14:45:50:560  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
+14:45:50:560  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@5ab5225a[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+14:45:50:560  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1779860586522_192.168.150.1_52987
+14:45:50:561  INFO 16996 --- [order-service] [nacos-grpc-client-executor-192.168.150.101-739] c.a.n.c.remote.client.grpc.GrpcClient    : [1779860586522_192.168.150.1_52987]Ignore complete event,isRunning:false,isAbandon=false
+14:45:50:566  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@254690b9[Running, pool size = 5, active threads = 0, queued tasks = 0, completed tasks = 740]
+14:45:50:566  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->e079f696-7217-4e90-ad99-6bfffc9eb80b
+14:45:50:566  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
+14:45:50:567  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
+14:45:50:567  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
+14:45:50:591  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+14:45:50:601  INFO 16996 --- [order-service] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
