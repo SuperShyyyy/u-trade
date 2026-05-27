@@ -12,6 +12,7 @@ import lombok.Data;
 @Schema(name = "订单详情VO")
 public class OrderVO implements Serializable {
 
+
     @Schema(description = "订单ID")
     private Long id;
 

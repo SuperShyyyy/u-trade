@@ -31,6 +31,11 @@ public class Order implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @TableLogic
+    @TableField("is_deleted")
+    @Schema(description = "是否删除 0未删除 1已删除")
+    private Integer isDeleted;
+
     @Schema(description = "订单ID")
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;

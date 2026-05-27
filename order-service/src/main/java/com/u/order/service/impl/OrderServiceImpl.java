@@ -252,6 +252,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }
         }
     }
+
     //A.5 辅助方法：释放锁
     private void unlockQuietly(boolean isLock, RLock lock) {
         if (isLock && lock.isHeldByCurrentThread()) {
@@ -360,85 +361,130 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     //C 查询用户订单
     @Override
     public PageDTO<OrderVO> pageQuery4User(int page, int pageSize, Integer status) {
+
         Long userId = BaseContext.getCurrentId();
-        //1.缓存Key
+
         String cacheKey = RedisConstant.ORDER_PAGE_QUERY_BUYER
                 + userId + ":" + page + ":" + pageSize + ":" + (status == null ? "all" : status);
-        //2.从Redis中获取缓存
-        PageDTO<OrderVO> cachedResult = (PageDTO<OrderVO>) redisTemplate.opsForValue().get(cacheKey);
-        if (cachedResult != null) {
-            return cachedResult;
+
+        // =========================
+        // 1. Redis缓存（JSON安全版）
+        // =========================
+        Object cacheObj = redisTemplate.opsForValue().get(cacheKey);
+        if (cacheObj instanceof PageDTO) {
+            return (PageDTO<OrderVO>) cacheObj;
         }
-        //3.构建分页参数
+
+        // =========================
+        // 2. 分页查询订单
+        // =========================
         Page<Order> pageParam = new Page<>(page, pageSize);
-        //4.构建查询条件
+
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Order::getBuyerId, userId);
 
         if (status != null) {
             queryWrapper.eq(Order::getStatus, status);
         }
-        //按创建时间倒序
+
         queryWrapper.orderByDesc(Order::getCreatedAt);
 
-        //5.执行分页查询
-        IPage<Order> orderIPage = orderMapper.selectPage(pageParam, queryWrapper);
-        List<Order> records = orderIPage.getRecords();
+        IPage<Order> orderPage = orderMapper.selectPage(pageParam, queryWrapper);
+        List<Order> records = orderPage.getRecords();
 
-        //6.处理无数据情况
-        if (records.isEmpty()) {
+        // =========================
+        // 3. 空数据处理
+        // =========================
+        if (records == null || records.isEmpty()) {
             PageDTO<OrderVO> emptyResult = new PageDTO<>(
-                    orderIPage.getTotal(),
-                    orderIPage.getPages(),
-                    orderIPage.getCurrent(),
+                    orderPage.getTotal(),
+                    orderPage.getPages(),
+                    orderPage.getCurrent(),
                     Collections.emptyList()
             );
+
             redisTemplate.opsForValue().set(cacheKey, emptyResult, 3, TimeUnit.MINUTES);
             return emptyResult;
         }
 
-        //7.准备关联数据所需的 ID 集合
-        List<Long> orderIds = records.stream().map(Order::getId).collect(Collectors.toList());
-        List<Long> itemIds = records.stream()
-                .map(Order::getItemId)
-                .filter(Objects::nonNull) // 防止 itemId 为空
-                .distinct() // 去重，减少查询量
+        // =========================
+        // 4. 批量查询 shipment（避免N+1）
+        // =========================
+        List<Long> orderIds = records.stream()
+                .map(Order::getId)
                 .collect(Collectors.toList());
 
-        //8.批量查询shipment表
-        Map<Long, Shipment> shipmentMap = orderIds.isEmpty()
-                ? new HashMap<>()
-                : shipmentMapper.selectList(new LambdaQueryWrapper<Shipment>().in(Shipment::getOrderId, orderIds))
-                .stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Shipment::getOrderId, s -> s, (s1, s2) -> s1));
+        Map<Long, Shipment> shipmentMap;
 
-        // TODO: 9.批量查询 item 表 - 后续通过 Feign 调用商品服务
-        // Map<Long, Item> itemMap = itemIds.isEmpty()
-        //         ? new HashMap<>()
-        //         : itemMapper.selectList(new LambdaQueryWrapper<Item>().in(Item::getId, itemIds))
-        //         .stream()
-        //         .filter(Objects::nonNull)
-        //         .collect(Collectors.toMap(Item::getId, item -> item, (v1, v2) -> v1));
+        if (!orderIds.isEmpty()) {
+            shipmentMap = shipmentMapper.selectList(
+                            new LambdaQueryWrapper<Shipment>()
+                                    .in(Shipment::getOrderId, orderIds)
+                    )
+                    .stream()
+                    .collect(Collectors.toMap(
+                            Shipment::getOrderId,
+                            s -> s,
+                            (a, b) -> a
+                    ));
+        } else {
+            shipmentMap = Collections.emptyMap();
+        }
 
-        //10.组装VO列表
+        // =========================
+        // 5. VO组装（核心）
+        // =========================
         List<OrderVO> voList = records.stream().map(order -> {
-            OrderVO vo = new OrderVO();
-            BeanUtils.copyProperties(order, vo);
 
-            if (order.getItemSnapshot() != null) {
-                ItemSnapshotDTO snapshot = order.getItemSnapshot();
+            OrderVO vo = new OrderVO();
+
+            // ---- 基础订单字段 ----
+            vo.setId(order.getId());
+            vo.setOrderNo(order.getOrderNo());
+            vo.setBuyerId(order.getBuyerId());
+            vo.setSellerId(order.getSellerId());
+            vo.setItemId(order.getItemId());
+
+            vo.setQuantity(order.getQuantity());
+            vo.setTotalPrice(order.getTotalPrice());
+            vo.setStatus(order.getStatus());
+
+            vo.setCreatedAt(order.getCreatedAt());
+            vo.setPaidAt(order.getPaidAt());
+            vo.setCompletedAt(order.getCompletedAt());
+            vo.setCancelledAt(order.getCancelledAt());
+
+            // =========================
+            // 6. 商品快照（核心设计）
+            // =========================
+            ItemSnapshotDTO snapshot = order.getItemSnapshot();
+
+            if (snapshot != null) {
+                vo.setItemSnapshot(snapshot);
+
                 vo.setItemTitle(snapshot.getTitle());
+                vo.setItemDescription(snapshot.getDescription());
+                vo.setPrice(snapshot.getPrice());
+
                 if (snapshot.getImages() != null && !snapshot.getImages().isEmpty()) {
                     vo.setItemImage(snapshot.getImages().get(0));
                 }
-                vo.setItemDescription(snapshot.getDescription());
-                vo.setPrice(snapshot.getPrice());
             }
 
-            //物流信息
+            // =========================
+            // 7. 物流信息（避免N+1）
+            // =========================
             Shipment shipment = shipmentMap.get(order.getId());
+
             if (shipment != null) {
+                vo.setShipmentId(shipment.getId());
+                vo.setReceiverName(shipment.getReceiverName());
+                vo.setReceiverPhone(shipment.getReceiverPhone());
+                vo.setReceiverProvince(shipment.getReceiverProvince());
+                vo.setReceiverCity(shipment.getReceiverCity());
+                vo.setReceiverDistrict(shipment.getReceiverDistrict());
+                vo.setReceiverAddress(shipment.getReceiverAddress());
+
                 vo.setShippedAt(shipment.getShippedAt());
                 vo.setDeliveredAt(shipment.getDeliveredAt());
             }
@@ -446,20 +492,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return vo;
         }).collect(Collectors.toList());
 
-        //构建最终结果 缓存&返回
+        // =========================
+        // 8. 封装分页结果
+        // =========================
         PageDTO<OrderVO> result = new PageDTO<>(
-                orderIPage.getTotal(),
-                orderIPage.getPages(),
-                orderIPage.getCurrent(),
+                orderPage.getTotal(),
+                orderPage.getPages(),
+                orderPage.getCurrent(),
                 voList
         );
 
-        //12.缓存 添加随机过期时间 防止缓存雪崩
+        // =========================
+        // 9. Redis缓存（防雪崩TTL）
+        // =========================
         long ttl = 3 + ThreadLocalRandom.current().nextInt(2);
+
         redisTemplate.opsForValue().set(cacheKey, result, ttl, TimeUnit.MINUTES);
+
         return result;
     }
-
     //D 查询订单详情
     @Override
     public OrderVO details(Long orderId) {
