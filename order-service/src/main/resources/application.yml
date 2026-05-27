@@ -19,6 +19,16 @@ spring:
         group: DEFAULT_GROUP
         refresh-enabled: true
 
+  rabbitmq:
+    host: 192.168.150.101
+    port: 5672
+    username: ${u.rabbit.username}
+    password: ${u.rabbit.password}
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
   config:
     import:
       - optional:nacos:shared-application.yml?group=DEFAULT_GROUP
@@ -31,14 +41,3 @@ data:
   redis:
     host: 192.168.150.101
     port: 6379
-
-rabbitmq:
-  host: 192.168.150.101
-  port: 5672
-  username: ${u.rabbit.username}
-  password: ${u.rabbit.password}
-  virtual-host: /
-  listener:
-    simple:
-      acknowledge-mode: manual
-      prefetch: 10

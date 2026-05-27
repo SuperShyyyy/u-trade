@@ -30,96 +30,144 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     private final GatewayAuthProperties gatewayAuthProperties;
     private final JwtProperties jwtProperties;
 
-    public JwtAuthFilter(JwtProperties jwtProperties, GatewayAuthProperties gatewayAuthProperties) {
+    public JwtAuthFilter(JwtProperties jwtProperties,
+                         GatewayAuthProperties gatewayAuthProperties) {
         this.jwtProperties = jwtProperties;
         this.gatewayAuthProperties = gatewayAuthProperties;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
         ServerHttpRequest request = exchange.getRequest();
         String path = normalizePath(request.getURI().getPath());
 
+        log.debug("Gateway request path: {}", path);
+
+        // =========================
+        // 1. 白名单直接放行
+        // =========================
         if (isWhiteList(path)) {
             return chain.filter(exchange);
         }
 
+        // =========================
+        // 2. 解析 Token
+        // =========================
         String token = resolveToken(request);
 
         if (!StringUtils.hasText(token)) {
-            log.warn("请求未携带token, path: {}", path);
-            return unauthorized(exchange.getResponse());
+            log.warn("❌ 未携带token, path: {}", path);
+            return unauthorized(exchange.getResponse(), "Missing token");
         }
 
+        // =========================
+        // 3. 解析 JWT
+        // =========================
+        Claims claims;
         try {
-            Claims claims = parseToken(token);
-            if (claims == null) {
-                log.warn("Token解析失败, path: {}", path);
-                return unauthorized(exchange.getResponse());
-            }
-
-            Object currentId = claims.get(JwtClaimsConstant.CURRENT_ID);
-            Object role = claims.get(JwtClaimsConstant.ROLE);
-            Object sourceType = claims.get(JwtClaimsConstant.SOURCE_TYPE);
-            log.debug("网关认证通过, path: {}, currentId: {}", path, currentId);
-
-            ServerHttpRequest mutatedRequest = request.mutate().headers(headers -> {
-                clearInternalHeaders(headers);
-
-                if (currentId != null) {
-                    headers.set(JwtClaimsConstant.CURRENT_ID, String.valueOf(currentId));
-                }
-                if (role != null) {
-                    headers.set(JwtClaimsConstant.ROLE, String.valueOf(role));
-                }
-                if (sourceType != null) {
-                    headers.set(JwtClaimsConstant.SOURCE_TYPE, String.valueOf(sourceType));
-                }
-                headers.set(GatewayAuthConstant.GATEWAY_AUTH_HEADER, gatewayAuthProperties.getAuthSecret());
-                if (StringUtils.hasText(jwtProperties.getUserTokenName())) {
-                    headers.set(jwtProperties.getUserTokenName(), token);
-                }
-                if (StringUtils.hasText(jwtProperties.getAdminTokenName())) {
-                    headers.set(jwtProperties.getAdminTokenName(), token);
-                }
-            }).build();
-
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            claims = parseToken(token);
         } catch (Exception e) {
-            log.warn("Token验证失败, path: {}, error: {}", path, e.getMessage());
-            return unauthorized(exchange.getResponse());
+            log.warn("❌ Token解析异常, path: {}, err: {}", path, e.getMessage());
+            return unauthorized(exchange.getResponse(), "Invalid token");
         }
+
+        if (claims == null) {
+            log.warn("❌ Token无效, path: {}", path);
+            return unauthorized(exchange.getResponse(), "Invalid token");
+        }
+
+        // =========================
+        // 4. 提取用户信息
+        // =========================
+        Object currentId = claims.get(JwtClaimsConstant.CURRENT_ID);
+        Object role = claims.get(JwtClaimsConstant.ROLE);
+        Object sourceType = claims.get(JwtClaimsConstant.SOURCE_TYPE);
+
+        log.debug("✅ JWT通过, path: {}, userId: {}", path, currentId);
+
+        // =========================
+        // 5. 透传 header
+        // =========================
+        ServerHttpRequest mutatedRequest = request.mutate()
+                .headers(headers -> {
+
+                    clearInternalHeaders(headers);
+
+                    if (currentId != null) {
+                        headers.set(JwtClaimsConstant.CURRENT_ID, String.valueOf(currentId));
+                    }
+                    if (role != null) {
+                        headers.set(JwtClaimsConstant.ROLE, String.valueOf(role));
+                    }
+                    if (sourceType != null) {
+                        headers.set(JwtClaimsConstant.SOURCE_TYPE, String.valueOf(sourceType));
+                    }
+
+                    headers.set(GatewayAuthConstant.GATEWAY_AUTH_HEADER,
+                            gatewayAuthProperties.getAuthSecret());
+
+                    if (StringUtils.hasText(jwtProperties.getUserTokenName())) {
+                        headers.set(jwtProperties.getUserTokenName(), token);
+                    }
+
+                    if (StringUtils.hasText(jwtProperties.getAdminTokenName())) {
+                        headers.set(jwtProperties.getAdminTokenName(), token);
+                    }
+                })
+                .build();
+
+        return chain.filter(exchange.mutate().request(mutatedRequest).build());
     }
 
+    // =========================
+    // 白名单
+    // =========================
     private boolean isWhiteList(String path) {
         return GatewayAuthConstants.DEFAULT_WHITE_LIST.stream()
                 .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
     }
 
+    // =========================
+    // path 统一处理（修复你的隐患）
+    // =========================
     private String normalizePath(String path) {
-        if (!StringUtils.hasText(path) || "/".equals(path) || !path.endsWith("/")) {
-            return path;
+        if (!StringUtils.hasText(path)) {
+            return "";
         }
-        return path.substring(0, path.length() - 1);
+        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
     }
 
+    // =========================
+    // token 提取（更稳版本）
+    // =========================
     private String resolveToken(ServerHttpRequest request) {
+
         String token = request.getHeaders().getFirst(GatewayAuthConstants.TOKEN_HEADER);
-        if (!StringUtils.hasText(token) && StringUtils.hasText(jwtProperties.getUserTokenName())) {
+
+        if (!StringUtils.hasText(token)) {
             token = request.getHeaders().getFirst(jwtProperties.getUserTokenName());
         }
-        if (!StringUtils.hasText(token) && StringUtils.hasText(jwtProperties.getAdminTokenName())) {
+
+        if (!StringUtils.hasText(token)) {
             token = request.getHeaders().getFirst(jwtProperties.getAdminTokenName());
         }
+
         if (!StringUtils.hasText(token)) {
-            token = request.getHeaders().getFirst(GatewayAuthConstants.AUTHORIZATION_HEADER);
-            if (StringUtils.hasText(token) && token.startsWith(GatewayAuthConstants.BEARER_PREFIX)) {
-                token = token.substring(GatewayAuthConstants.BEARER_PREFIX.length());
+            String auth = request.getHeaders().getFirst(GatewayAuthConstants.AUTHORIZATION_HEADER);
+
+            if (StringUtils.hasText(auth) &&
+                    auth.startsWith(GatewayAuthConstants.BEARER_PREFIX)) {
+                token = auth.substring(GatewayAuthConstants.BEARER_PREFIX.length());
             }
         }
+
         return token;
     }
 
+    // =========================
+    // 清理内部 header
+    // =========================
     private void clearInternalHeaders(HttpHeaders headers) {
         headers.remove(JwtClaimsConstant.CURRENT_ID);
         headers.remove(JwtClaimsConstant.ROLE);
@@ -127,24 +175,27 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         headers.remove(GatewayAuthConstant.GATEWAY_AUTH_HEADER);
     }
 
+    // =========================
+    // JWT 解析（双 key）
+    // =========================
     private Claims parseToken(String token) {
-        Claims claims = null;
-        try {
-            claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
-            return claims;
-        } catch (Exception ignored) {
-        }
 
         try {
-            claims = JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(), token);
-            return claims;
-        } catch (Exception ignored) {
-        }
+            return JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
+        } catch (Exception ignored) {}
+
+        try {
+            return JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(), token);
+        } catch (Exception ignored) {}
 
         return null;
     }
 
-    private Mono<Void> unauthorized(ServerHttpResponse response) {
+    // =========================
+    // 统一 401 响应
+    // =========================
+    private Mono<Void> unauthorized(ServerHttpResponse response, String msg) {
+        log.warn("🚫 Gateway拒绝请求: {}", msg);
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         return response.setComplete();
     }

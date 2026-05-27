@@ -28,7 +28,7 @@ public interface IOrderService extends IService<Order> {
     /**
      * 支付订单
      */
-    OrderPaymentVO payment(OrderPaymentDTO dto) throws Exception;
+    OrderPaymentVO payment(OrderPaymentDTO dto);
 
     /**
      * 查询用户历史订单
@@ -43,7 +43,7 @@ public interface IOrderService extends IService<Order> {
     /**
      * 用户取消订单
      */
-    void userCancelById(Long orderId) throws Exception;
+    void userCancelById(Long orderId);
 
 
     /**

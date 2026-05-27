@@ -1,5 +1,6 @@
 package com.u.order.service.payment.strategy;
 
+import com.u.common.exception.BusinessException;
 import com.u.order.domain.po.Order;
 import org.springframework.stereotype.Component;
 
@@ -7,11 +8,11 @@ import org.springframework.stereotype.Component;
 public class AlipayPayStrategy implements OrderPayStrategy {
     @Override
     public void pay(Order order) {
-        // TODO 支付宝支付 API 暂未接入，先保留占位实现
+        throw new BusinessException("支付宝支付暂未接入，请选择余额支付");
     }
 
     @Override
     public String buildPrepayInfo(Order order) {
-        return "ALIPAY_PREPAY_TODO";
+        throw new BusinessException("支付宝支付暂未接入，请选择余额支付");
     }
 }

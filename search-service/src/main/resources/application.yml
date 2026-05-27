@@ -18,27 +18,26 @@ spring:
         file-extension: yml
         group: DEFAULT_GROUP
         refresh-enabled: true
-
+  elasticsearch:
+    uris: http://192.168.150.101:9200
   config:
     import:
       - optional:nacos:shared-application.yml?group=DEFAULT_GROUP
       # - optional:nacos:${spring.application.name}.yml?group=DEFAULT_GROUP
       - classpath:application-secret.yml
-
+  rabbitmq:
+    host: 192.168.150.101
+    port: 5672
+    username: ${u.rabbit.username}
+    password: ${u.rabbit.password}
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
 server:
   port: 8083
 data:
   redis:
     host: 192.168.150.101
     port: 6379
-
-rabbitmq:
-  host: 192.168.150.101
-  port: 5672
-  username: ${u.rabbit.username}
-  password: ${u.rabbit.password}
-  virtual-host: /
-  listener:
-    simple:
-      acknowledge-mode: manual
-      prefetch: 10

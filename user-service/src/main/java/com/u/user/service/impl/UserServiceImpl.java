@@ -1,5 +1,6 @@
 package com.u.user.service.impl;
 
+import com.u.api.client.wallet.WalletClient;
 import com.u.common.constant.JwtClaimsConstant;
 import com.u.common.constant.RedisConstant;
 import com.u.common.context.BaseContext;
@@ -27,6 +28,9 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import com.alibaba.fastjson2.JSON;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.util.concurrent.TimeUnit;
 /**
  * <p>
@@ -42,6 +46,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private final JwtProperties jwtProperties;
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final StringRedisTemplate stringRedisTemplate;
+    private final WalletClient walletClient;
     @Override
     public LoginVO userLogin(LoginDTO loginDTO) {
         // 1. 根据账号查询用户
@@ -102,6 +107,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         user.setUpdateTime(LocalDateTime.now());
         // 保存用户
         this.save(user);
+        Long userId = user.getId();
+
+        try {
+            walletClient.createWallet(userId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+       /* TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronizationAdapter() {
+                    @Override
+                    public void afterCommit() {
+
+                    }
+                }
+        );
+*/
     }
 
     // 抽取检查逻辑

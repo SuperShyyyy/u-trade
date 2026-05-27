@@ -39,7 +39,9 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 "/v3/api-docs/**",
                 "/swagger-resources/**",
                 "/favicon.ico",
-                "/error"
+                "/error",
+                "/ws/**",
+                "/ws-test.html"
         };
 
         registry.addInterceptor(jwtAuthInterceptor)

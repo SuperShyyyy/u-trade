@@ -23,4 +23,6 @@ public interface InternalWalletApi {
                                         @RequestParam("sellerId") Long sellerId,
                                         @RequestParam("amount") BigDecimal amount,
                                         @RequestParam("orderNo") String orderNo);
+    @PostMapping("/create")
+    Result<Void> createWallet(@RequestParam("userId") Long userId);
 }

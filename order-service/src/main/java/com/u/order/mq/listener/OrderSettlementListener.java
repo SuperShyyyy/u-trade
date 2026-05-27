@@ -1,12 +1,17 @@
 package com.u.order.mq.listener;
 
 import com.u.api.client.wallet.WalletClient;
+import com.u.common.constant.OrderStatusConstant;
+import com.u.common.constant.PayMethodConstant;
 import com.u.common.constant.RabbitMQConstant;
 import com.u.common.constant.RedisConstant;
+import com.u.common.exception.BusinessException;
 import com.u.common.message.OrderSettlementMessage;
 import com.u.common.result.Result;
 import com.u.common.result.ResultCode;
 import com.rabbitmq.client.Channel;
+import com.u.order.domain.po.Order;
+import com.u.order.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -16,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -25,6 +31,7 @@ public class OrderSettlementListener {
 
     private final WalletClient walletClient;
     private final StringRedisTemplate stringRedisTemplate;
+    private final OrderMapper orderMapper;
 
     @RabbitListener(queues = RabbitMQConstant.QUEUE_ORDER_SETTLE_EXEC )
     public void handle(OrderSettlementMessage msg, Channel channel, Message message) throws IOException {
@@ -54,6 +61,8 @@ public class OrderSettlementListener {
                 return;
             }
 
+            validateSettlementMessage(msg);
+
             Result<Void> result = walletClient.transferFrozenToSeller(
                     msg.getBuyerId(),
                     msg.getSellerId(),
@@ -80,12 +89,39 @@ public class OrderSettlementListener {
             }
             stringRedisTemplate.delete(idempotentKey);
 
-            if (isSystemException(e)) {
+            if (e instanceof BusinessException) {
+                channel.basicNack(tag, false, false);
+            } else if (isSystemException(e)) {
                 try { TimeUnit.SECONDS.sleep(1); } catch (InterruptedException ignored) {}
                 channel.basicNack(tag, false, true);
             } else {
                 channel.basicNack(tag, false, false);
             }
+        }
+    }
+
+    private void validateSettlementMessage(OrderSettlementMessage msg) {
+        if (msg == null || msg.getOrderNo() == null || msg.getBuyerId() == null
+                || msg.getSellerId() == null || msg.getAmount() == null) {
+            throw new BusinessException("结算消息字段不完整");
+        }
+
+        Order order = orderMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order>()
+                .eq(Order::getOrderNo, msg.getOrderNo()));
+        if (order == null) {
+            throw new BusinessException("结算订单不存在");
+        }
+        if (!Objects.equals(order.getBuyerId(), msg.getBuyerId())
+                || !Objects.equals(order.getSellerId(), msg.getSellerId())
+                || order.getTotalPrice() == null
+                || order.getTotalPrice().compareTo(msg.getAmount()) != 0) {
+            throw new BusinessException("结算消息与订单信息不一致");
+        }
+        if (!OrderStatusConstant.FINISHED.equals(order.getStatus())) {
+            throw new BusinessException("订单未完成，不能结算");
+        }
+        if (!String.valueOf(PayMethodConstant.BALANCE).equals(order.getPaymentMethod())) {
+            throw new BusinessException("非余额支付订单不能执行钱包结算");
         }
     }
 

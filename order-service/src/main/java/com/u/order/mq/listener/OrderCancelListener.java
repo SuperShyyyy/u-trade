@@ -47,14 +47,25 @@ public class OrderCancelListener {
 
         log.info("收到延迟取消消息: orderId={}, orderNo={}", orderId, orderNo);
 
-        // 1. 幂等性检查 (防止同一条消息被重复消费)
+        // 1. 幂等性检查：PROCESSING 仅防并发，SUCCESS 才代表真正处理完成
         String idempotentKey = "order:cancel:" + orderId;
-        Boolean isFirst = redisTemplate.opsForValue()
-                .setIfAbsent(idempotentKey, "1", 24, TimeUnit.HOURS); // 时间稍微长一点，覆盖重试窗口
+        String processedStatus = redisTemplate.opsForValue().get(idempotentKey);
 
-        if (Boolean.FALSE.equals(isFirst)) {
+        if ("SUCCESS".equals(processedStatus)) {
             log.info("订单 {} 已处理过取消 (幂等拦截)，忽略重复消息", orderNo);
             channel.basicAck(tag, false);
+            return;
+        }
+        if ("PROCESSING".equals(processedStatus)) {
+            log.info("订单 {} 正在处理取消，稍后重试", orderNo);
+            channel.basicNack(tag, false, true);
+            return;
+        }
+
+        Boolean locked = redisTemplate.opsForValue()
+                .setIfAbsent(idempotentKey, "PROCESSING", 5, TimeUnit.MINUTES);
+        if (!Boolean.TRUE.equals(locked)) {
+            channel.basicNack(tag, false, true);
             return;
         }
 
@@ -63,6 +74,7 @@ public class OrderCancelListener {
 
             if (order == null) {
                 log.warn("订单 {} 不存在，可能是被手动删除了，直接确认消息", orderNo);
+                redisTemplate.opsForValue().set(idempotentKey, "SUCCESS", 24, TimeUnit.HOURS);
                 channel.basicAck(tag, false);
                 return;
             }
@@ -74,6 +86,7 @@ public class OrderCancelListener {
                         orderNo, order.getStatus());
 
                 // 关键：直接 Ack，不抛异常，不重试，不进入死信
+                redisTemplate.opsForValue().set(idempotentKey, "SUCCESS", 24, TimeUnit.HOURS);
                 channel.basicAck(tag, false);
                 return;
             }
@@ -84,15 +97,13 @@ public class OrderCancelListener {
             orderService.cancelOrderInternal(orderId);
 
             log.info("订单 {} 自动取消成功", orderNo);
+            redisTemplate.opsForValue().set(idempotentKey, "SUCCESS", 24, TimeUnit.HOURS);
             channel.basicAck(tag, false);
 
         } catch (Exception e) {
             log.error("取消订单失败 orderNo={}, orderId={}", orderNo, orderId, e);
+            redisTemplate.delete(idempotentKey);
 
-            // 删除幂等键，允许下次重试时重新处理
-            // 如果是业务异常（如库存扣减失败但状态不对），其实不应该重试，但为了简单起见，
-            // 通常系统异常重试，业务异常可以根据具体类型决定。
-            // 这里保留你原有的逻辑判断
             if (isSystemException(e)) {
                 log.warn("系统异常，消息将重新入队重试: {}", e.getMessage());
                 channel.basicNack(tag, false, true); // requeue = true
@@ -101,11 +112,6 @@ public class OrderCancelListener {
                 channel.basicNack(tag, false, false); // requeue = false
                 // 对于确定的业务异常（如状态已被别人改了），其实也可以直接 Ack，视业务容忍度而定
                 // 如果这里 Nack(false)，消息会去死信队列，需要有人监控死信队列
-            }
-
-            // 如果是系统异常重试，保留幂等锁；如果是彻底失败，可以删除锁让后续人工干预或死信处理逻辑再试
-            if (!isSystemException(e)) {
-                redisTemplate.delete(idempotentKey);
             }
         }
     }

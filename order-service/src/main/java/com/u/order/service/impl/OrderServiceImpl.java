@@ -91,200 +91,245 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     private  final RedissonClient redissonClient;
 
+    /*
+        * [用户下单请求]
+             │
+             ▼
+        1. 校验与前置准备 (无锁, 无本地事务)
+           ├── 远程查询商品、地址信息
+           └── 各种基础业务风控校验（是不是自己的商品等）
+             │
+             ▼
+        2. 分布式锁控制并发 (Redisson)
+             │
+             ▼
+        3. 调用远程商品微服务扣减库存/锁定商品 (RPC)
+           └── 成功后拿到结果
+             │
+             ▼
+        4. 开启本地事务，写入订单 (Order微服务本地事务)
+           ├── orderMapper.insert(order)
+           └── 发送 MQ 延迟取消消息
+             │
+             ▼
+        5. 事务提交完成 ──> 释放分布式锁*/
+    //A 提交订单 主方法
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderSubmitVO orderSubmit(OrderSubmitDTO dto) {
 
         Long userId = BaseContext.getCurrentId();
         Long itemId = dto.getItemId();
-        boolean releaseRemoteItemLock = false;
+        Result<OrderItemDTO> itemResult = itemClient.getOrderItem(itemId);
+        ensureSuccess(itemResult, "查询商品失败");
+        OrderItemDTO item = itemResult.getData();
+        if (item == null) {
+            throw new BusinessException("商品不存在");
+        }
+        Long sellerId = item.getSellerId();
+        if (userId.equals(sellerId)) {
+            throw new BusinessException("不能购买自己的商品");
+        }
+        if (dto.getSellerId() != null && !dto.getSellerId().equals(sellerId)) {
+            throw new BusinessException("卖家信息与商品不一致");
+        }
+        UserAddressDTO address = null;
+        if (dto.getAddressId() != null) {
+            Result<UserAddressDTO> addressResult = userAddressClient.getAddress(dto.getAddressId(), userId);
+            ensureSuccess(addressResult, "查询收货地址失败");
+            address = addressResult.getData();
+            if (address == null) {
+                throw new BusinessException("收货地址不存在");
+            }
+        }//前面操作都是查询请求无需事务
 
         String lockKey = "order:lock:item:" + itemId;
         RLock lock = redissonClient.getLock(lockKey);
-
         boolean isLock = false;
+        boolean releaseRemoteItemLock = false;
 
         try {
-            // 不等待 + 看门狗自动续期
+            // 不等待，立刻获取锁
             isLock = lock.tryLock(0, -1, TimeUnit.SECONDS);
-
             if (!isLock) {
-                throw new BusinessException("宝贝已售出或正在被他人购买中，请稍后重试");
+                throw new BusinessException("宝贝正在被他人购买中，请稍后重试");
             }
-
-            Result<OrderItemDTO> itemResult = itemClient.getOrderItem(itemId);
-            ensureSuccess(itemResult, "查询商品失败");
-            OrderItemDTO item = itemResult.getData();
-            if (item == null) {
-                throw new BusinessException("商品不存在");
-            }
-
-            Long sellerId = item.getSellerId();
-            if (sellerId == null) {
-                throw new BusinessException("商品数据异常");
-            }
-
-            if (userId.equals(sellerId)) {
-                throw new BusinessException("不能购买自己的商品");
-            }
-
-            if (dto.getSellerId() != null && !dto.getSellerId().equals(sellerId)) {
-                throw new BusinessException("卖家信息与商品不一致");
-            }
-
+            // 1. 远程调用：锁定/扣减商品库存 (RPC)
             ensureSuccess(itemClient.lockItem(itemId), "锁定商品失败");
             releaseRemoteItemLock = true;
+            // 2. 借助 Spring 编程式事务或内部申明式事务，只包裹本地 DB 操作
+            Order order = createOrderInLocalTransaction(userId, sellerId, item, address);
 
-            BigDecimal itemPrice = item.getPrice();
-            if (itemPrice == null) {
-                throw new BusinessException("商品价格异常");
-            }
-            BigDecimal shippingFee = (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
-                    ? BigDecimal.ZERO
-                    : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
+            // 3. 异步发送延迟取消消息
+            // 超时自动取消
+            sendDelayMessageLazy(order);
 
-            UserAddressDTO address = null;
-            if (dto.getAddressId() != null) {
-                Result<UserAddressDTO> addressResult = userAddressClient.getAddress(dto.getAddressId(), userId);
-                ensureSuccess(addressResult, "查询收货地址失败");
-                address = addressResult.getData();
-                if (address == null) {
-                    throw new BusinessException("收货地址不存在");
-                }
-            }
-
-            ItemSnapshotDTO snapshot = buildItemSnapshot(item);
-
-            //5. 创建订单
-            String orderNo = SerialNoUtil.generateOrderNo();
-
-            Order order = new Order()
-                    .setBuyerId(userId)
-                    .setSellerId(sellerId)
-                    .setItemId(itemId)
-                    .setPrice(itemPrice)
-                    .setQuantity(1)
-                    .setShippingFee(shippingFee)
-                    .setTotalPrice(itemPrice.add(shippingFee))
-                    .setStatus(OrderStatusConstant.WAIT_PAY)
-                    .setCreatedAt(LocalDateTime.now());
-            order.setOrderNo(orderNo);
-            order.setItemSnapshot(snapshot);
-            if (address != null) {
-                order.setReceiverProvince(address.getProvince());
-                order.setReceiverCity(address.getCity());
-                order.setReceiverDistrict(address.getDistrict());
-                order.setReceiverAddress(address.getDetailAddress());
-                order.setReceiverPhone(address.getReceiverPhone());
-                order.setReceiverName(address.getReceiverName());
-            }
-
-            //6. 插入订单
-            orderMapper.insert(order);
-
-            //7. 发送延迟消息
-            try {
-                orderCancelDelaySender.sendDelayCancelMessage(orderNo, order.getId());
-                log.info("订单 {} 创建成功，已发送延迟取消消息", orderNo);
-            } catch (Exception e) {
-                log.error("订单 {} 延迟消息发送失败，走兜底任务", orderNo, e);
-            }
-
-            //8. 清除缓存
+            // 4. 清理缓存
             clearOrderCache(order);
 
-            //9. 事务后释放锁
-            if (isLock) {
-                TransactionSynchronizationManager.registerSynchronization(
-                        new TransactionSynchronization() {
-                            @Override
-                            public void afterCompletion(int status) {
-                                if (lock.isHeldByCurrentThread()) {
-                                    lock.unlock();
-                                }
+            // 5. 核心：事务成功后，注册钩子释放分布式锁
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCompletion(int status) {
+                            if (lock.isHeldByCurrentThread()) {
+                                lock.unlock();
                             }
                         }
-                );
-            }
+                    }
+            );
 
             OrderSubmitVO vo = new OrderSubmitVO();
             BeanUtils.copyProperties(order, vo);
-            releaseRemoteItemLock = false;
             return vo;
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            rollbackRemoteLockQuietly(releaseRemoteItemLock, itemId);
+            // 异常发生且事务未成功，当前线程立刻释放锁
+            unlockQuietly(isLock, lock);
             throw new BusinessException("系统繁忙，请稍后再试");
-        } catch (BusinessException e) {
-            throw e;
         } catch (Exception e) {
-            log.error("订单创建异常", e);
-            throw new BusinessException("订单创建失败，请稍后重试");
-        } finally {
-            if (releaseRemoteItemLock) {
-                try {
-                    ensureSuccess(itemClient.releaseItem(itemId), "释放商品锁定失败");
-                } catch (Exception e) {
-                    log.error("订单失败后释放商品锁定异常, itemId={}", itemId, e);
-                }
+            log.error("订单创建异常, itemId={}", itemId, e);
+            rollbackRemoteLockQuietly(releaseRemoteItemLock, itemId);
+            unlockQuietly(isLock, lock);
+            if (e instanceof BusinessException) {
+                throw (BusinessException) e;
             }
+            throw new BusinessException("订单创建失败，请稍后重试");
+        }finally {
             if (isLock && lock.isHeldByCurrentThread()) {
-                try {
-                    lock.unlock();
-                } catch (Exception ignored) {}
+                lock.unlock();
             }
         }
     }
+    //A.2 辅助方法：在本地事务创建订单
+    @Transactional(rollbackFor = Exception.class)
+    public Order createOrderInLocalTransaction(Long userId, Long sellerId, OrderItemDTO item, UserAddressDTO address) {
+        BigDecimal itemPrice = item.getPrice();
+        BigDecimal shippingFee = (item.getIsFreeShipping() != null && item.getIsFreeShipping() == 1)
+                ? BigDecimal.ZERO
+                : (item.getShippingFee() != null ? item.getShippingFee() : BigDecimal.ZERO);
+        String orderNo = SerialNoUtil.generateOrderNo();
+        Order order = new Order()
+                .setBuyerId(userId)
+                .setSellerId(sellerId)
+                .setItemId(item.getId())
+                .setPrice(itemPrice)
+                .setQuantity(1)
+                .setShippingFee(shippingFee)
+                .setTotalPrice(itemPrice.add(shippingFee))
+                .setStatus(OrderStatusConstant.WAIT_PAY)
+                .setCreatedAt(LocalDateTime.now())
+                .setOrderNo(orderNo)
+                .setItemSnapshot(buildItemSnapshot(item));
+        if (address != null) {
+            order.setReceiverProvince(address.getProvince())
+                    .setReceiverCity(address.getCity())
+                    .setReceiverDistrict(address.getDistrict())
+                    .setReceiverAddress(address.getDetailAddress())
+                    .setReceiverPhone(address.getReceiverPhone())
+                    .setReceiverName(address.getReceiverName());
+        }
+        orderMapper.insert(order);
+        return order;
+    }
+    //A.3 辅助方法：发送超时未支付取消订单延时消息
+    private void sendDelayMessageLazy(Order order) {
+        try {
+            orderCancelDelaySender.sendDelayCancelMessage(order.getOrderNo(), order.getId());
+        } catch (Exception e) {
+            log.error("订单 {} 延迟消息发送失败，依赖调度兜底", order.getOrderNo(), e);
+        }
+    }
+    //A.4 辅助方法：回滚
+    private void rollbackRemoteLockQuietly(boolean needRollback, Long itemId) {
+        if (needRollback) {
+            try {
+                itemClient.releaseItem(itemId);
+            } catch (Exception ex) {
+                log.error("分布式事务补偿：释放商品锁定失败, itemId={}", itemId, ex);
+            }
+        }
+    }
+    //A.5 辅助方法：释放锁
+    private void unlockQuietly(boolean isLock, RLock lock) {
+        if (isLock && lock.isHeldByCurrentThread()) {
+            try { lock.unlock(); } catch (Exception ignored) {}
+        }
+    }
 
-
+    //B.1 支付 主方法
     @Transactional(rollbackFor = Exception.class)
     @Override
     public OrderPaymentVO payment(OrderPaymentDTO dto)  {
         Long userId = BaseContext.getCurrentId();
         String orderNo = dto.getOrderNo();
+        RLock payLock = redissonClient.getLock("order:pay:" + orderNo);
+        boolean locked = false;
 
-        // 1. 查询订单
-        Order order = lambdaQuery()
-                .eq(Order::getOrderNo, orderNo)
-                .eq(Order::getBuyerId, userId)
-                .one();
-
-        if (order == null) {
-            throw new BusinessException("订单不存在");
-        }
-        if (order.getStatus() != OrderStatusConstant.WAIT_PAY) {
-            //已支付直接返回成功
-            if (order.getStatus() == OrderStatusConstant.PAID) {
-                log.info("订单 {} 重复支付请求，直接返回成功", orderNo);
-                Integer payType = dto.getPayType() == null ? PayMethodConstant.BALANCE : dto.getPayType();
-                return buildPaymentVO(order, payType, "PAID_SUCCESS");
+        try {
+            locked = payLock.tryLock(0, 30, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new BusinessException("订单正在支付处理中，请稍后重试");
             }
-            throw new BusinessException("订单状态异常，无法支付 (当前状态:" + order.getStatus() + ")");
+
+            // 1. 查询订单
+            Order order = lambdaQuery()
+                    .eq(Order::getOrderNo, orderNo)
+                    .eq(Order::getBuyerId, userId)
+                    .one();
+
+            if (order == null) {
+                throw new BusinessException("订单不存在");
+            }
+            if (order.getStatus() != null && !order.getStatus().equals(OrderStatusConstant.WAIT_PAY)) {
+                //已支付直接返回成功
+                if (order.getStatus().equals(OrderStatusConstant.PAID)) {
+                    log.info("订单 {} 重复支付请求，直接返回成功", orderNo);
+                    Integer payType = dto.getPayType() == null ? PayMethodConstant.BALANCE : dto.getPayType();
+                    return buildPaymentVO(order, payType, "PAID_SUCCESS");
+                }
+                throw new BusinessException("订单状态异常，无法支付 (当前状态:" + order.getStatus() + ")");
+            }
+
+            // 2. 执行支付（工厂方法 + 策略），并写入支付流水
+            PayExecuteResult payResult = paymentService.executeOrderPay(order, dto.getPayType());
+            boolean walletFrozen = PayMethodConstant.BALANCE.equals(payResult.getPayType());
+
+            try {
+                // 3. 更新订单状态为已支付
+                LambdaUpdateWrapper<Order> orderUpdate = new LambdaUpdateWrapper<>();
+                orderUpdate.eq(Order::getOrderNo, orderNo)
+                        .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
+                        .set(Order::getStatus, OrderStatusConstant.PAID)
+                        .set(Order::getPaymentMethod, String.valueOf(payResult.getPayType()))
+                        .set(Order::getPaidAt, LocalDateTime.now());
+
+                int orderUpdated = orderMapper.update(null, orderUpdate);
+                if (orderUpdated == 0) {
+                    throw new BusinessException("支付失败，订单状态已变更，请刷新");
+                }
+
+                ensureSuccess(itemClient.markItemSold(order.getItemId()), "支付成功但商品状态同步失败，请联系客服");
+
+                // 5. 清除缓存
+                clearOrderCache(order);
+                return buildPaymentVO(order, payResult.getPayType(), payResult.getPrepayInfo());
+            } catch (Exception e) {
+                compensateWalletFreeze(walletFrozen, order);
+                throw e;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("系统繁忙，请稍后再试");
+        } finally {
+            if (locked && payLock.isHeldByCurrentThread()) {
+                payLock.unlock();
+            }
         }
-        // 2. 执行支付（工厂方法 + 策略），并写入支付流水
-        PayExecuteResult payResult = paymentService.executeOrderPay(order, dto.getPayType());
-
-        // 3. 更新订单状态为已支付
-        LambdaUpdateWrapper<Order> orderUpdate = new LambdaUpdateWrapper<>();
-        orderUpdate.eq(Order::getOrderNo, orderNo)
-                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
-                .set(Order::getStatus, OrderStatusConstant.PAID)
-                .set(Order::getPaymentMethod, String.valueOf(payResult.getPayType()))
-                .set(Order::getPaidAt, LocalDateTime.now());
-
-        int orderUpdated = orderMapper.update(null, orderUpdate);
-        if (orderUpdated == 0) {
-            throw new BusinessException("支付失败，订单状态已变更，请刷新");
-        }
-
-        ensureSuccess(itemClient.markItemSold(order.getItemId()), "支付成功但商品状态同步失败，请联系客服");
-
-        // 5. 清除缓存
-        clearOrderCache(order);
-        return buildPaymentVO(order, payResult.getPayType(), payResult.getPrepayInfo());
     }
-
-    // 辅助方法 构建支付返回VO
+    //B.2 辅助方法 构建支付返回VO
     private OrderPaymentVO buildPaymentVO(Order order, Integer payType, String prepayInfo) {
         OrderPaymentVO vo = new OrderPaymentVO();
         vo.setOrderId(order.getId());
@@ -296,6 +341,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return vo;
     }
 
+    private void compensateWalletFreeze(boolean walletFrozen, Order order) {
+        if (!walletFrozen || order == null) {
+            return;
+        }
+        try {
+            ensureSuccess(walletClient.unfreezeAmount(
+                    order.getBuyerId(),
+                    order.getTotalPrice(),
+                    order.getOrderNo()
+            ), "余额冻结补偿失败");
+            log.info("订单 {} 支付失败，已回滚钱包冻结金额", order.getOrderNo());
+        } catch (Exception ex) {
+            log.error("订单 {} 支付失败后钱包解冻补偿失败，请人工处理", order.getOrderNo(), ex);
+        }
+    }
+
+    //C 查询用户订单
     @Override
     public PageDTO<OrderVO> pageQuery4User(int page, int pageSize, Integer status) {
         Long userId = BaseContext.getCurrentId();
@@ -398,6 +460,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return result;
     }
 
+    //D 查询订单详情
     @Override
     public OrderVO details(Long orderId) {
         Long userId = BaseContext.getCurrentId();
@@ -451,6 +514,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return orderVO;
     }
 
+    //E 用户取消订单 主方法
     @Transactional
     @Override
     public void userCancelById(Long orderId)  {
@@ -468,6 +532,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         cancelOrderInternal(orderId);
     }
 
+    //E.2 辅助方法 取消订单
     @Transactional
     public void cancelOrderInternal(Long orderId) {
         // 1. 更新订单状态，仅当状态为待支付时才更新
@@ -498,7 +563,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
     }
 
-
+    //F 确认收货 主方法
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long orderId) {
@@ -540,8 +605,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 3. 同步更新物流信息
         LambdaUpdateWrapper<Shipment> shipmentWrapper = new LambdaUpdateWrapper<>();
         shipmentWrapper.eq(Shipment::getOrderId, orderId)
-                .eq(Shipment::getStatus, OrderStatusConstant.SHIPPED) // 仅当物流为已发货时允许改为已签收
-                .set(Shipment::getStatus, OrderStatusConstant.FINISHED) // 已签收
+                .eq(Shipment::getStatus, ShipmentStatusConstant.SHIPPED) // 仅当物流为已发货时允许改为已签收
+                .set(Shipment::getStatus, ShipmentStatusConstant.FINISHED) // 已签收
                 .set(Shipment::getDeliveredAt, LocalDateTime.now());
 
         boolean shipmentUpdated = shipmentService.update(shipmentWrapper);
@@ -567,7 +632,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     }
 
-
+    //G 用户发货 主方法
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void shipment(Long orderId, String logisticsCompany, String trackingNumber) {
@@ -632,35 +697,35 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         log.info("订单 {} 发货 DB 操作完成，等待事务提交", orderId);
     }
 
+
+    //H 通过订单id查询物流状态
     @Override
     public ShipmentVO queryShipmentByOrderId(Long orderId) {
         Long userId = BaseContext.getCurrentId();
 
-        // 1. 正确的查询方式：通过 orderId 关联查询，而不是 selectById
-        LambdaQueryWrapper<Shipment> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Shipment::getOrderId, orderId);
-        Shipment shipment = shipmentMapper.selectOne(queryWrapper);
-
-        if (shipment == null) {
-            Order order = orderMapper.selectById(orderId);
-            if (order != null && OrderStatusConstant.SHIPPED.equals(order.getStatus())) {
-                throw new BusinessException("物流信息同步延迟，请稍后重试");
-            }
-            throw new BusinessException("该订单尚未发货，无物流信息");
-        }
-
-        // 2. 权限校验 买家和卖家都能看
-        // 获取订单信息以校验买家身份
+        // 1. 先校验订单权限，避免通过物流错误信息探测任意订单状态
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
 
-        boolean isSeller = shipment.getSellerId().equals(userId);
         boolean isBuyer = order.getBuyerId().equals(userId);
+        boolean isSeller = order.getSellerId().equals(userId);
 
         if (!isSeller && !isBuyer) {
             throw new BusinessException("无权查看该订单的物流信息");
+        }
+
+        // 2. 正确的查询方式：通过 orderId 关联查询，而不是 selectById
+        LambdaQueryWrapper<Shipment> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Shipment::getOrderId, orderId);
+        Shipment shipment = shipmentMapper.selectOne(queryWrapper);
+
+        if (shipment == null) {
+            if (OrderStatusConstant.SHIPPED.equals(order.getStatus())) {
+                throw new BusinessException("物流信息同步延迟，请稍后重试");
+            }
+            throw new BusinessException("该订单尚未发货，无物流信息");
         }
         // 4. 转换 VO
         ShipmentVO shipmentVO = new ShipmentVO();
@@ -670,6 +735,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return shipmentVO;
     }
 
+    //辅助方法清理缓存
     private void clearOrderCache(Order order) {
 
         Set<String> keys = new HashSet<>();
@@ -730,9 +796,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
     }
 
+    //I 处理单订单确认收货
     @Transactional(rollbackFor = Exception.class)
     public void processSingleOrderConfirm(Long orderId) {
-        // 1. 更新订单状态
+        // 1. 乐观锁更新订单状态
         boolean updated = lambdaUpdate()
                 .eq(Order::getId, orderId)
                 .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
@@ -743,51 +810,72 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             log.info("订单 {} 状态已变更或已处理，跳过", orderId);
             return;
         }
-        // 2. 更新物流状态
-        shipmentService.lambdaUpdate()
+
+        // 2. 更新物流状态（增加失败校验）
+        boolean shipUpdated = shipmentService.lambdaUpdate()
                 .eq(Shipment::getOrderId, orderId)
                 .eq(Shipment::getStatus, ShipmentStatusConstant.SHIPPED)
                 .set(Shipment::getStatus, ShipmentStatusConstant.FINISHED)
                 .set(Shipment::getDeliveredAt, LocalDateTime.now())
                 .update();
-        // 3. 查询订单信息
-        Order order = orderMapper.selectById(orderId);
+        if (!shipUpdated) {
+            log.warn("订单 {} 物流状态更新失败，可能已被处理", orderId);
+            // 根据业务决定是否抛出异常回滚，或者直接返回
+            throw new BusinessException("物流状态更新失败，防止数据不一致");
+        }
 
+        // 3. 查询订单信息并作防错判空
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            log.error("订单 {} 不存在", orderId);
+            throw new BusinessException("订单不存在");
+        }
+
+        // 4. 校验支付方式（假设 PaymentMethod 是 Integer/String，尽量避免用 String.valueOf 强转）
         if (!String.valueOf(PayMethodConstant.BALANCE).equals(order.getPaymentMethod())) {
             clearOrderCache(order);
             log.info("订单 {} 自动确认完成（非余额支付，无需钱包结算）", orderId);
             return;
         }
 
-        // 4. 构建消息
+        // 5. 构建并保存本地消息表
+        String messageId = order.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
         OrderSettlementMessage msg = new OrderSettlementMessage(
                 order.getBuyerId(),
                 order.getSellerId(),
                 order.getTotalPrice(),
                 order.getOrderNo()
         );
-        String messageId = order.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
         msg.setMessageId(messageId);
         msg.setTimestamp(System.currentTimeMillis());
-        // 5. 保存本地消息表
+
         MqMessageLog mqLog = new MqMessageLog();
         mqLog.setMessageId(messageId);
         mqLog.setExchange(RabbitMQConstant.EXCHANGE_ORDER_SETTLE_EXEC);
         mqLog.setRoutingKey(RabbitMQConstant.ROUTING_KEY_ORDER_SETTLE_EXEC);
         mqLog.setMessageBody(JSON.toJSONString(msg));
-        mqLog.setStatus(MqMessageLogStatus.SENDING);
+        mqLog.setStatus(MqMessageLogStatus.SENDING); // 初始状态为发送中
         mqLog.setRetryCount(0);
         mqLog.setCreateTime(LocalDateTime.now());
         mqMessageLogService.save(mqLog);
+
+        // 6. 注册事务同步器（注意：afterCommit 里的操作不属于当前事务）
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
                         try {
+                            // 发送 MQ
                             orderSettlementSender.send(msg);
                             log.info("订单 {} MQ发送成功 messageId={}", orderId, messageId);
+
+                            // 【重要】更新本地消息表状态为 SUCCESS，避免定时任务重复发送
+                            // 注意：这里需要传播行为为 REQUIRES_NEW 的方法去更新，或者异步更新
+                            mqMessageLogService.updateStatus(messageId, MqMessageLogStatus.SUCCESS,null);
+
                         } catch (Exception e) {
-                            log.error("订单 {} MQ发送失败 messageId={}", orderId, messageId, e);
+                            log.error("订单 {} MQ发送失败，等待定时任务补偿 messageId={}", orderId, messageId, e);
+                            // 这里不需要抛出异常，因为事务已经提交了。留给定时任务去重试。
                         }
                     }
                 }
@@ -795,8 +883,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 7. 清理缓存
         clearOrderCache(order);
-
-        log.info("订单 {} 自动确认完成（消息已入库，等待发送）", orderId);
+        log.info("订单 {} 自动确认完成（消息已入库，等待事务提交后发送）", orderId);
     }
 
     private ItemSnapshotDTO buildItemSnapshot(OrderItemDTO item) {

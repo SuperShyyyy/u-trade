@@ -46,6 +46,36 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     private final WalletLogMapper walletLogMapper;
     private final UserWalletMapper userWalletMapper;
     private final WalletRechargeMapper walletRechargeMapper;
+
+    @Override
+    @Transactional
+    public void createWalletIfAbsent(Long userId) {
+        // 1. 查询是否存在
+        UserWallet wallet = lambdaQuery()
+                .eq(UserWallet::getUserId, userId)
+                .one();
+
+        if (wallet != null) {
+            return; // 已存在直接返回（幂等）
+        }
+
+        // 2. 创建钱包
+        UserWallet newWallet = new UserWallet()
+                .setUserId(userId)
+                .setBalance(BigDecimal.ZERO)
+                .setFrozenAmount(BigDecimal.ZERO)
+                .setTotalIncome(BigDecimal.ZERO)
+                .setTotalExpense(BigDecimal.ZERO)
+                .setVersion(0);
+        try {
+            this.save(newWallet);
+        } catch (DuplicateKeyException e) {
+            // 并发情况下兜底
+            log.warn("钱包已存在（并发创建），userId={}", userId);
+        }
+    }
+
+
     @Override
     public UserWalletVO getWallet() {
         Long userId = BaseContext.getCurrentId();

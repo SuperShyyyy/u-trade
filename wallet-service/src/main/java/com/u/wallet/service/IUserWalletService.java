@@ -22,6 +22,8 @@ import java.math.BigDecimal;
  */
 public interface IUserWalletService extends IService<UserWallet> {
 
+    void createWalletIfAbsent(Long userId);
+
     UserWalletVO getWallet();
 
     PageDTO<WalletLogVO> getWalletLog(WalletLogQueryDTO dto);

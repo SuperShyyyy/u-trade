@@ -37,7 +37,8 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 "/v3/api-docs/**",
                 "/swagger-resources/**",
                 "/favicon.ico",
-                "/error"
+                "/error",
+                "/inner/**"
         };
 
         registry.addInterceptor(jwtAuthInterceptor)
@@ -48,8 +49,6 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 .addPathPatterns("/user/**")
                 .excludePathPatterns(excludePaths);
 
-        registry.addInterceptor(jwtAuthInterceptor)
-                .addPathPatterns("/inner/**");
     }
 
     @Bean

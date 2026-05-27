@@ -1,6 +1,9 @@
 server:
   port: 8080
-
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG  # 查看路由匹配和过滤器执行情况
+    reactor.netty: DEBUG                      # 查看底层网络转发情况
 spring:
   config:
     import:

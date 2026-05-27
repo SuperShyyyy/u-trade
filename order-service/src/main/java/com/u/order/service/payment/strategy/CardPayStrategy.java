@@ -1,5 +1,6 @@
 package com.u.order.service.payment.strategy;
 
+import com.u.common.exception.BusinessException;
 import com.u.order.domain.po.Order;
 import org.springframework.stereotype.Component;
 
@@ -7,11 +8,11 @@ import org.springframework.stereotype.Component;
 public class CardPayStrategy implements OrderPayStrategy {
     @Override
     public void pay(Order order) {
-        // TODO 银行卡支付网关暂未接入，先保留占位实现
+        throw new BusinessException("银行卡支付暂未接入，请选择余额支付");
     }
 
     @Override
     public String buildPrepayInfo(Order order) {
-        return "CARD_PAID_SUCCESS";
+        throw new BusinessException("银行卡支付暂未接入，请选择余额支付");
     }
 }
