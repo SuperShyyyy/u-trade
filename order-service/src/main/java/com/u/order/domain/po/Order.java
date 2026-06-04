@@ -25,7 +25,7 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("`order`")
+@TableName(value = "`order`", autoResultMap = true)
 @Schema(name="Order对象", description="订单表")
 public class Order implements Serializable {
 
@@ -104,7 +104,7 @@ public class Order implements Serializable {
      * 自动将数据库的 JSON 字符串转为 Java 对象
      */
     @Schema(description = "商品快照，保存下单时商品信息")
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(value = "item_snapshot", typeHandler = JacksonTypeHandler.class)
     private ItemSnapshotDTO itemSnapshot;
 
     private LocalDateTime updatedAt;

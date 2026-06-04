@@ -9,10 +9,12 @@ import com.u.common.exception.BusinessException;
 import com.u.common.result.Result;
 import com.u.item.domain.po.Item;
 import com.u.item.mq.ItemEsSender;
+import com.u.item.service.ICategoryService;
 import com.u.item.service.IItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +27,7 @@ import java.util.List;
 public class InternalOrderItemController implements InternalOrderItemApi {
 
     private final IItemService itemService;
+    private final ICategoryService categoryService;
     private final ItemEsSender itemEsSender;
     private final StringRedisTemplate stringRedisTemplate;
 /*
@@ -69,8 +72,17 @@ public class InternalOrderItemController implements InternalOrderItemApi {
         }
         ItemTradeDTO vo = new ItemTradeDTO();
         BeanUtils.copyProperties(item, vo);
+        vo.setItemId(item.getId());
         if (item.getImages() != null && !item.getImages().isEmpty()) {
             vo.setImages(List.of(item.getImages().split(",")));
+        } else if (StringUtils.hasText(item.getCover())) {
+            vo.setImages(List.of(item.getCover()));
+        }
+        if (item.getCategoryId() != null) {
+            var category = categoryService.getById(item.getCategoryId());
+            if (category != null) {
+                vo.setCategoryName(category.getName());
+            }
         }
         return Result.success(vo);
     }

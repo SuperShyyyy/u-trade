@@ -22,5 +22,5 @@ public interface InternalOrderItemApi {
     Result<Void> releaseItem(@PathVariable("id") Long id);
 
     @GetMapping("/{id}")
-    Result<ItemTradeDTO> getItemTrade(@PathVariable Long id);
+    Result<ItemTradeDTO> getItemTrade(@PathVariable("id") Long id);
 }

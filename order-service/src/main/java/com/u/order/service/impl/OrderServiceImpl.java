@@ -9,7 +9,6 @@ import com.u.api.client.item.ItemClient;
 import com.u.api.client.user.UserAddressClient;
 import com.u.api.client.wallet.WalletClient;
 import com.u.api.dto.item.ItemTradeDTO;
-import com.u.api.dto.item.OrderItemDTO;
 import com.u.api.dto.user.UserAddressDTO;
 import com.u.common.constant.MqMessageLogStatus;
 import com.u.common.constant.OrderStatusConstant;
@@ -530,60 +529,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 5. VO组装（核心）
         // =========================
         List<OrderVO> voList = records.stream().map(order -> {
-
             OrderVO vo = new OrderVO();
-
-            // ---- 基础订单字段 ----
-            vo.setId(order.getId());
-            vo.setOrderNo(order.getOrderNo());
-            vo.setBuyerId(order.getBuyerId());
-            vo.setSellerId(order.getSellerId());
-            vo.setItemId(order.getItemId());
-
-            vo.setQuantity(order.getQuantity());
-            vo.setTotalPrice(order.getTotalPrice());
-            vo.setStatus(order.getStatus());
-
-            vo.setCreatedAt(order.getCreatedAt());
-            vo.setPaidAt(order.getPaidAt());
-            vo.setCompletedAt(order.getCompletedAt());
-            vo.setCancelledAt(order.getCancelledAt());
-
-            // =========================
-            // 6. 商品快照（核心设计）
-            // =========================
-            ItemSnapshotDTO snapshot = order.getItemSnapshot();
-
-            if (snapshot != null) {
-                vo.setItemSnapshot(snapshot);
-
-                vo.setItemTitle(snapshot.getTitle());
-                vo.setItemDescription(snapshot.getDescription());
-                vo.setPrice(snapshot.getPrice());
-
-                if (snapshot.getImages() != null && !snapshot.getImages().isEmpty()) {
-                    vo.setItemImage(snapshot.getImages().get(0));
-                }
-            }
-
-            // =========================
-            // 7. 物流信息（避免N+1）
-            // =========================
-            Shipment shipment = shipmentMap.get(order.getId());
-
-            if (shipment != null) {
-                vo.setShipmentId(shipment.getId());
-                vo.setReceiverName(shipment.getReceiverName());
-                vo.setReceiverPhone(shipment.getReceiverPhone());
-                vo.setReceiverProvince(shipment.getReceiverProvince());
-                vo.setReceiverCity(shipment.getReceiverCity());
-                vo.setReceiverDistrict(shipment.getReceiverDistrict());
-                vo.setReceiverAddress(shipment.getReceiverAddress());
-
-                vo.setShippedAt(shipment.getShippedAt());
-                vo.setDeliveredAt(shipment.getDeliveredAt());
-            }
-
+            fillOrderVoFromOrder(order, vo, shipmentMap.get(order.getId()));
             return vo;
         }).collect(Collectors.toList());
 
@@ -643,16 +590,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 没有缓存   OrderVO
         OrderVO orderVO = new OrderVO();
-        BeanUtils.copyProperties(fullOrder, orderVO);
-        if (fullOrder.getItemSnapshot() != null) {
-            ItemSnapshotDTO snapshot = fullOrder.getItemSnapshot();
-            orderVO.setItemTitle(snapshot.getTitle());
-            orderVO.setItemDescription(snapshot.getDescription());
-            if (snapshot.getImages() != null && !snapshot.getImages().isEmpty()) {
-                orderVO.setItemImage(snapshot.getImages().get(0));
-            }
-            orderVO.setPrice(snapshot.getPrice());
-        }
+        Shipment shipment = shipmentMapper.selectOne(
+                new LambdaQueryWrapper<Shipment>().eq(Shipment::getOrderId, orderId)
+        );
+        fillOrderVoFromOrder(fullOrder, orderVO, shipment);
 
         // 存入缓存
         redisTemplate.opsForValue().set(cacheKey, orderVO, 30, TimeUnit.MINUTES);
@@ -1032,14 +973,64 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         log.info("订单 {} 自动确认完成（消息已入库，等待事务提交后发送）", orderId);
     }
 
-    private ItemSnapshotDTO buildItemSnapshot(OrderItemDTO item) {
-        ItemSnapshotDTO snapshot = new ItemSnapshotDTO();
-        snapshot.setItemId(item.getId());
-        snapshot.setTitle(item.getTitle());
-        snapshot.setDescription(item.getDescription());
-        snapshot.setPrice(item.getPrice());
-        snapshot.setImages(item.getImages());
-        return snapshot;
+    private void fillOrderVoFromOrder(Order order, OrderVO vo, Shipment shipment) {
+        vo.setId(order.getId());
+        vo.setOrderNo(order.getOrderNo());
+        vo.setBuyerId(order.getBuyerId());
+        vo.setSellerId(order.getSellerId());
+        vo.setItemId(order.getItemId());
+        vo.setQuantity(order.getQuantity());
+        vo.setTotalPrice(order.getTotalPrice());
+        vo.setStatus(order.getStatus());
+        vo.setCreatedAt(order.getCreatedAt());
+        vo.setPaidAt(order.getPaidAt());
+        vo.setCompletedAt(order.getCompletedAt());
+        vo.setCancelledAt(order.getCancelledAt());
+
+        ItemSnapshotDTO snapshot = order.getItemSnapshot();
+        if (snapshot != null) {
+            vo.setItemSnapshot(snapshot);
+            vo.setItemTitle(snapshot.getTitle());
+            vo.setItemDescription(snapshot.getDescription());
+            vo.setItemImage(resolveSnapshotImage(snapshot));
+            if (snapshot.getPrice() != null) {
+                vo.setPrice(snapshot.getPrice());
+            }
+        }
+        if (vo.getPrice() == null) {
+            vo.setPrice(order.getPrice());
+        }
+
+        fillReceiverAndShipment(vo, order, shipment);
+    }
+
+    private String resolveSnapshotImage(ItemSnapshotDTO snapshot) {
+        if (snapshot.getImages() != null && !snapshot.getImages().isEmpty()) {
+            return snapshot.getImages().get(0);
+        }
+        return snapshot.getMainImage();
+    }
+
+    private void fillReceiverAndShipment(OrderVO vo, Order order, Shipment shipment) {
+        if (shipment != null) {
+            vo.setShipmentId(shipment.getId());
+            vo.setReceiverName(shipment.getReceiverName());
+            vo.setReceiverPhone(shipment.getReceiverPhone());
+            vo.setReceiverProvince(shipment.getReceiverProvince());
+            vo.setReceiverCity(shipment.getReceiverCity());
+            vo.setReceiverDistrict(shipment.getReceiverDistrict());
+            vo.setReceiverAddress(shipment.getReceiverAddress());
+            vo.setShippedAt(shipment.getShippedAt());
+            vo.setDeliveredAt(shipment.getDeliveredAt());
+            return;
+        }
+        vo.setReceiverName(order.getReceiverName());
+        vo.setReceiverPhone(order.getReceiverPhone());
+        vo.setReceiverProvince(order.getReceiverProvince());
+        vo.setReceiverCity(order.getReceiverCity());
+        vo.setReceiverDistrict(order.getReceiverDistrict());
+        vo.setReceiverAddress(order.getReceiverAddress());
+        vo.setShippedAt(order.getShippedAt());
     }
 
     private void ensureSuccess(Result<?> result, String defaultErrorMsg) {

@@ -26,5 +26,5 @@ public interface ItemClient {
     Result<Void> releaseItem(@PathVariable("id") Long id);
 
     @GetMapping("/{id}")
-    Result<ItemTradeDTO> getItemTrade(Long id);
+    Result<ItemTradeDTO> getItemTrade(@PathVariable("id") Long id);
 }
