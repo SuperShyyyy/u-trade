@@ -99,4 +99,41 @@ public class OrderTask {
         List<String> orderIdsStr = orders.stream().map(o -> String.valueOf(o.getId())).toList();
         stringRedisTemplate.opsForZSet().remove("order:auto_confirm:queue", orderIdsStr.toArray());
     }
+
+    /**
+     * 每5分钟扫描超时未支付订单（DB 兜底，防止延迟 MQ 发送失败导致订单永久 WAIT_PAY）
+     */
+    @Scheduled(cron = "0 */5 * * * ?")
+    public void cancelExpiredUnpaidOrders() {
+        log.info("========== 超时未支付订单兜底扫描开始 [{}] ==========", LocalDateTime.now());
+
+        // 30分钟前创建的待支付订单视为超时
+        LocalDateTime expireThreshold = LocalDateTime.now().minusMinutes(30);
+
+        List<Order> expiredOrders = orderMapper.selectList(new LambdaQueryWrapper<Order>()
+                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
+                .lt(Order::getCreatedAt, expireThreshold)
+                .last("limit 500"));
+
+        if (expiredOrders.isEmpty()) {
+            log.debug("无超时未支付订单");
+            return;
+        }
+
+        log.info("扫描到 {} 个超时未支付订单", expiredOrders.size());
+        int successCount = 0;
+        int failCount = 0;
+
+        for (Order order : expiredOrders) {
+            try {
+                orderService.cancelOrderInternal(order.getId(), "超时未支付自动取消");
+                successCount++;
+            } catch (Exception e) {
+                log.error("超时取消订单失败 orderId={}", order.getId(), e);
+                failCount++;
+            }
+        }
+
+        log.info("========== 超时未支付订单兜底扫描结束 成功:{} 失败:{} ==========", successCount, failCount);
+    }
 }

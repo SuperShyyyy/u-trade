@@ -33,14 +33,14 @@ public interface UserWalletMapper extends BaseMapper<UserWallet> {
                 @Param("version") Integer version
         );
 
-        int updateFreezeWallet(Long id,
+        int updateFreezeWallet(@Param("id") Long id,
               @Param("balanceAfter")  BigDecimal balanceAfter,
               @Param("frozenAfter") BigDecimal frozenAfter,
               @Param("version")  Integer version
         );
 
 
-        int updateUnfreezeWallet(Long id,
+        int updateUnfreezeWallet(@Param("id") Long id,
               @Param("balanceAfter")  BigDecimal balanceAfter,
               @Param("frozenAfter")  BigDecimal frozenAfter,
               @Param("version")   Integer version
@@ -53,7 +53,7 @@ public interface UserWalletMapper extends BaseMapper<UserWallet> {
                 @Param("version") Integer version
         );
 
-        int updateRechargeWallet(Long id,
+        int updateRechargeWallet(@Param("id") Long id,
                 @Param("after")  BigDecimal after,
                 @Param("income")  BigDecimal income,
                 @Param("version") Integer version

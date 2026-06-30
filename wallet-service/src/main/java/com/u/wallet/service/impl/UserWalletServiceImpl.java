@@ -20,6 +20,7 @@ import com.u.wallet.mapper.WalletRechargeMapper;
 import com.u.common.result.PageDTO;
 import com.u.wallet.service.IUserWalletService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.u.common.exception.BusinessException;
 import com.u.common.utils.SerialNoUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     private final WalletRechargeMapper walletRechargeMapper;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void createWalletIfAbsent(Long userId) {
         // 1. 查询是否存在
         UserWallet wallet = lambdaQuery()
@@ -79,17 +80,8 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     @Override
     public UserWalletVO getWallet() {
         Long userId = BaseContext.getCurrentId();
-        UserWallet wallet = lambdaQuery().eq(UserWallet::getUserId, userId).one();
-        if (wallet == null) {
-            wallet = new UserWallet()
-                    .setUserId(userId)
-                    .setBalance(BigDecimal.ZERO)
-                    .setFrozenAmount(BigDecimal.ZERO)
-                    .setTotalIncome(BigDecimal.ZERO)
-                    .setTotalExpense(BigDecimal.ZERO)
-                    .setVersion(0); // 初始化 version
-            this.save(wallet);
-        }
+        // 复用并发安全的创建逻辑，避免并发创建重复钱包
+        UserWallet wallet = getOrCreateWallet(userId);
         UserWalletVO walletVO = new UserWalletVO();
         BeanUtils.copyProperties(wallet, walletVO);
         return walletVO;
@@ -131,7 +123,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     }
 
     // todo 充值
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void recharge(WalletRechargeDTO dto) {
         Long userId = BaseContext.getCurrentId();
@@ -149,7 +141,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     }
 
     // todo 提现
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void withdraw(WalletWithdrawDTO dto) {
 
@@ -168,11 +160,11 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (wallet == null) {
-            throw new RuntimeException("钱包不存在");
+            throw new BusinessException("钱包不存在");
         }
 
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("余额不足");
+            throw new BusinessException("余额不足");
         }
 
         BigDecimal before = wallet.getBalance();
@@ -189,7 +181,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (update == 0) {
-            throw new RuntimeException("提现失败，发生并发");
+            throw new BusinessException("提现失败，发生并发");
         }
 
         // 写流水
@@ -212,7 +204,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     }
 
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void handleRechargeSuccess(String bizOrderNo) {
 
@@ -222,11 +214,12 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (record == null) {
-            throw new RuntimeException("充值记录不存在");
+            throw new BusinessException("充值记录不存在");
         }
 
-        // 幂等控制
-        if (record.getStatus() == WalletBizTypeConstant.RECHARGE) {
+        // 幂等控制：充值状态为 SUCCESS(1) 时表示已处理，直接返回
+        if (record.getStatus() != null && record.getStatus() == 1) {
+            log.info("充值记录已处理，直接返回 bizOrderNo={}", bizOrderNo);
             return;
         }
 
@@ -252,7 +245,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (update == 0) {
-            throw new RuntimeException("充值更新失败，发生并发");
+            throw new BusinessException("充值更新失败，发生并发");
         }
 
         // 更新充值状态
@@ -308,14 +301,25 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     }
 
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void freezeAmount(Long userId, BigDecimal amount, String orderNo) {
 
         UserWallet wallet = getOrCreateWallet(userId);
 
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("余额不足");
+            throw new BusinessException("余额不足");
+        }
+
+        // 幂等校验：同一订单号+业务类型是否已处理
+        Long existCount = walletLogMapper.selectCount(
+                Wrappers.<WalletLog>lambdaQuery()
+                        .eq(WalletLog::getBizOrderNo, orderNo)
+                        .eq(WalletLog::getBizType, WalletBizTypeConstant.ORDER_FREEZE)
+        );
+        if (existCount > 0) {
+            log.info("订单冻结已处理，跳过 orderNo={}", orderNo);
+            return;
         }
 
         BigDecimal balanceBefore = wallet.getBalance();
@@ -333,7 +337,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (update == 0) {
-            throw new RuntimeException("冻结失败，发生并发");
+            throw new BusinessException("冻结失败，发生并发");
         }
 
         WalletLog log = new WalletLog();
@@ -352,14 +356,24 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         walletLogMapper.insert(log);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void unfreezeAmount(Long userId, BigDecimal amount, String orderNo) {
 
-
        UserWallet wallet = getOrCreateWallet(userId);
         if (wallet.getFrozenAmount().compareTo(amount) < 0) {
-            throw new RuntimeException("冻结金额不足");
+            throw new BusinessException("冻结金额不足");
+        }
+
+        // 幂等校验：同一订单号+业务类型是否已处理
+        Long existCount = walletLogMapper.selectCount(
+                Wrappers.<WalletLog>lambdaQuery()
+                        .eq(WalletLog::getBizOrderNo, orderNo)
+                        .eq(WalletLog::getBizType, WalletBizTypeConstant.CANCEL_UNFREEZE)
+        );
+        if (existCount > 0) {
+            log.info("订单解冻已处理，跳过 orderNo={}", orderNo);
+            return;
         }
 
         BigDecimal balanceBefore = wallet.getBalance();
@@ -377,7 +391,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (update == 0) {
-            throw new RuntimeException("解冻失败，发生并发");
+            throw new BusinessException("解冻失败，发生并发");
         }
 
         WalletLog log = new WalletLog();
@@ -398,15 +412,26 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
 
 
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void transferFrozenToSeller(Long buyerId, Long sellerId, BigDecimal amount, String orderNo) {
+
+        // 幂等校验：同一订单号+业务类型是否已处理
+        Long existCount = walletLogMapper.selectCount(
+                Wrappers.<WalletLog>lambdaQuery()
+                        .eq(WalletLog::getBizOrderNo, orderNo)
+                        .eq(WalletLog::getBizType, WalletBizTypeConstant.ORDER_PAY)
+        );
+        if (existCount > 0) {
+            log.info("订单结算已处理，跳过 orderNo={}", orderNo);
+            return;
+        }
 
         // 1 查询买家钱包
         UserWallet buyerWallet = getOrCreateWallet(buyerId);
 
         if (buyerWallet.getFrozenAmount().compareTo(amount) < 0) {
-            throw new RuntimeException("冻结金额不足");
+            throw new BusinessException("冻结金额不足");
         }
 
         // 记录旧值
@@ -426,7 +451,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (buyerUpdate == 0) {
-            throw new RuntimeException("买家钱包更新失败，发生并发冲突");
+            throw new BusinessException("买家钱包更新失败，发生并发冲突");
         }
 
         // 3 查询卖家钱包
@@ -447,7 +472,7 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         );
 
         if (sellerUpdate == 0) {
-            throw new RuntimeException("卖家钱包更新失败，发生并发冲突");
+            throw new BusinessException("卖家钱包更新失败，发生并发冲突");
         }
 
         // 5 buyer流水

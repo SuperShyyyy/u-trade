@@ -4,6 +4,7 @@ import com.u.api.client.wallet.WalletClient;
 import com.u.common.constant.JwtClaimsConstant;
 import com.u.common.constant.RedisConstant;
 import com.u.common.context.BaseContext;
+import com.u.user.domain.dto.ChangePasswordDTO;
 import com.u.user.domain.dto.LoginDTO;
 import com.u.user.domain.dto.RegisterDTO;
 import com.u.user.domain.dto.UserDTO;
@@ -16,7 +17,10 @@ import com.u.common.properties.JwtProperties;
 import com.u.user.service.IUserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.u.common.utils.JwtUtil;
+import com.u.common.result.Result;
+import com.u.common.result.ResultCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,9 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import com.alibaba.fastjson2.JSON;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.concurrent.TimeUnit;
 /**
@@ -42,13 +45,27 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
     private final JwtProperties jwtProperties;
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final StringRedisTemplate stringRedisTemplate;
     private final WalletClient walletClient;
+
+    private static final String LOGIN_FAIL_PREFIX = "user:login:fail:";
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final long LOCK_DURATION_MINUTES = 15;
+
     @Override
     public LoginVO userLogin(LoginDTO loginDTO) {
+        // 登录限流：检查是否被临时锁定
+        String failKey = LOGIN_FAIL_PREFIX + loginDTO.getUsername();
+        String failCountStr = stringRedisTemplate.opsForValue().get(failKey);
+        int failCount = failCountStr != null ? Integer.parseInt(failCountStr) : 0;
+        if (failCount >= MAX_LOGIN_ATTEMPTS) {
+            throw new BusinessException("登录失败次数过多，账号已被临时锁定，请" + LOCK_DURATION_MINUTES + "分钟后重试");
+        }
+
         // 1. 根据账号查询用户
         User user = lambdaQuery().eq(User::getUsername, loginDTO.getUsername()).one();
         // 2. 校验用户是否存在
@@ -61,29 +78,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 3. 校验密码 BCrypt比对
 
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+            // 登录失败，增加失败计数
+            stringRedisTemplate.opsForValue().set(failKey, String.valueOf(failCount + 1),
+                    LOCK_DURATION_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
             throw new BusinessException("密码错误");
         }
 
-        // 4. 构造 JWT Claims
+        // 登录成功，清除失败计数
+        stringRedisTemplate.delete(failKey);
+
+        // 4. 获取/初始化 tokenVersion（首次登录为 0）
+        String versionKey = RedisConstant.TOKEN_VERSION_KEY + user.getId();
+        String v = stringRedisTemplate.opsForValue().get(versionKey);
+        int tokenVersion = (v != null) ? Integer.parseInt(v) : 0;
+        if (v == null) {
+            // 首次登录初始化版本号为 0，TTL 与 Token 有效期一致
+            stringRedisTemplate.opsForValue().set(versionKey, "0",
+                    jwtProperties.getUserTtl(), TimeUnit.MILLISECONDS);
+        }
+
+        // 5. 生成 sessionId（UUID），覆盖旧 session 实现单设备互踢
+        String sessionId = UUID.randomUUID().toString();
+        String sessionKey = RedisConstant.USER_SESSION_KEY + user.getId();
+        stringRedisTemplate.opsForValue().set(sessionKey, sessionId,
+                jwtProperties.getUserTtl(), TimeUnit.MILLISECONDS);
+
+        // 6. 构造 JWT Claims
         Map<String, Object> claims = new HashMap<>();
-
-        // 统一 ID 字段
         claims.put(JwtClaimsConstant.CURRENT_ID, user.getId());
-
-        //  角色设为 null 代表普通用户
         claims.put(JwtClaimsConstant.ROLE, null);
-
-        // 来源标识
         claims.put(JwtClaimsConstant.SOURCE_TYPE, "USER");
+        claims.put(JwtClaimsConstant.SESSION_ID, sessionId);
+        claims.put(JwtClaimsConstant.TOKEN_VERSION, tokenVersion);
 
-        // 5. 生成 Token
+        // 7. 生成 Token
         String token = JwtUtil.createJWT(
-                jwtProperties.getUserSecretKey(), // 用户专属密钥
-                jwtProperties.getUserTtl(),       // 用户 Token 有效期
+                jwtProperties.getUserSecretKey(),
+                jwtProperties.getUserTtl(),
                 claims
         );
 
-        // 6. 返回 VO
+        log.info("用户登录成功, userId={}, sessionId={}, tokenVersion={}",
+                user.getId(), sessionId, tokenVersion);
+
+        // 8. 返回 VO
         return LoginVO.builder()
                 .id(user.getId())
                 .token(token)
@@ -110,19 +148,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         Long userId = user.getId();
 
         try {
-            walletClient.createWallet(userId);
+            Result<Void> walletResult = walletClient.createWallet(userId);
+            if (walletResult == null || !ResultCode.SUCCESS.equals(walletResult.getCode())) {
+                throw new BusinessException("钱包创建失败，请重试");
+            }
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("创建钱包异常, userId={}", userId, e);
+            throw new BusinessException("钱包服务不可用，请稍后重试");
         }
-       /* TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronizationAdapter() {
-                    @Override
-                    public void afterCommit() {
-
-                    }
-                }
-        );
-*/
     }
 
     // 抽取检查逻辑
@@ -165,12 +200,94 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public void updateUserInfo(UserDTO userDTO){
         Long userId = BaseContext.getCurrentId();
+        // 乐观锁：先查获取 version，再条件更新（lambdaUpdate 不触发 @Version 自动乐观锁，需手动处理）
+        User currentUser = getById(userId);
+        if (currentUser == null) {
+            throw new BusinessException("用户不存在");
+        }
         lambdaUpdate()
-                .eq(User::getId,userId)
+                .eq(User::getId, userId)
+                .eq(User::getVersion, currentUser.getVersion())
                 .set(User::getUsername, userDTO.getUsername())
                 .set(User::getPhone, userDTO.getPhone())
                 .set(User::getAvatar, userDTO.getAvatar())
+                .setSql("version = version + 1")
                 .update();
         stringRedisTemplate.delete(RedisConstant.USER_INFO_KEY + userId);
+    }
+
+    @Override
+    public void changePassword(ChangePasswordDTO changePasswordDTO) {
+        Long userId = BaseContext.getCurrentId();
+        User user = getById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        // 校验原密码
+        if (!passwordEncoder.matches(changePasswordDTO.getOldPassword(), user.getPassword())) {
+            throw new BusinessException("原密码错误");
+        }
+        if (passwordEncoder.matches(changePasswordDTO.getNewPassword(), user.getPassword())) {
+            throw new BusinessException("新密码不能与原密码相同");
+        }
+        // 更新密码
+        lambdaUpdate()
+                .eq(User::getId, userId)
+                .eq(User::getVersion, user.getVersion())
+                .set(User::getPassword, passwordEncoder.encode(changePasswordDTO.getNewPassword()))
+                .setSql("version = version + 1")
+                .update();
+        stringRedisTemplate.delete(RedisConstant.USER_INFO_KEY + userId);
+        // tokenVersion +1 -> 所有设备所有 Token 立即失效，强制重新登录
+        incrTokenVersion(userId);
+    }
+
+    @Override
+    public void resetPassword(Long userId, String newPassword) {
+        if (newPassword == null || newPassword.length() < 6 || newPassword.length() > 32) {
+            throw new BusinessException("密码长度需在6-32位之间");
+        }
+        User user = getById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        lambdaUpdate()
+                .eq(User::getId, userId)
+                .eq(User::getVersion, user.getVersion())
+                .set(User::getPassword, passwordEncoder.encode(newPassword))
+                .setSql("version = version + 1")
+                .update();
+        stringRedisTemplate.delete(RedisConstant.USER_INFO_KEY + userId);
+        // 管理员重置密码 -> 同样 tokenVersion +1 使所有 Token 失效
+        incrTokenVersion(userId);
+    }
+
+    @Override
+    public void logout(Long userId) {
+        // tokenVersion +1 -> 当前 session 及所有设备 Token 失效
+        incrTokenVersion(userId);
+        // 清除 session，新登录必须重新生成
+        stringRedisTemplate.delete(RedisConstant.USER_SESSION_KEY + userId);
+    }
+
+    /**
+     * tokenVersion 递增：使所有已签发的旧版本 Token 全部失效
+     * <p>
+     * 原理：JWT 签发时携带 version=N；Redis 存储当前有效 version。
+     * Gateway 校验: jwt.tokenVersion != redis.tokenVersion → 401。
+     * INCR 确保原子递增，TTL 与 Token 有效期一致（过期自动清理）。
+     */
+    private void incrTokenVersion(Long userId) {
+        String key = RedisConstant.TOKEN_VERSION_KEY + userId;
+        long ttl = jwtProperties.getUserTtl();
+        try {
+            Long newVersion = stringRedisTemplate.opsForValue().increment(key);
+            if (newVersion != null) {
+                stringRedisTemplate.expire(key, ttl, TimeUnit.MILLISECONDS);
+            }
+            log.info("tokenVersion 递增成功, userId={}, newVersion={}", userId, newVersion);
+        } catch (Exception e) {
+            log.error("tokenVersion 递增失败 (Redis异常), userId={}", userId, e);
+        }
     }
 }

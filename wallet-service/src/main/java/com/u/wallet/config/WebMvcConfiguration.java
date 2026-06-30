@@ -37,8 +37,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 "/v3/api-docs/**",
                 "/swagger-resources/**",
                 "/favicon.ico",
-                "/error",
-                "/inner/**"
+                "/error"
         };
 
         registry.addInterceptor(jwtAuthInterceptor)
@@ -48,10 +47,10 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/user/**")
                 .excludePathPatterns(excludePaths);
-   /*
+
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/inner/**");
-   */ }
+    }
 
     @Bean
     public OpenAPI customOpenAPI() {

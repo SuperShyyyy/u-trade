@@ -1,6 +1,5 @@
 package com.u.common.security;
 
-import com.u.common.constant.GatewayAuthConstant;
 import com.u.common.constant.InternalAuthConstant;
 import com.u.common.constant.JwtClaimsConstant;
 import com.u.common.context.BaseContext;
@@ -52,7 +51,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean validateGatewayRequest(HttpServletRequest request, HttpServletResponse response, String path) {
-        String gatewayAuth = request.getHeader(GatewayAuthConstant.GATEWAY_AUTH_HEADER);
+        String gatewayAuth = request.getHeader(GatewayAuthConstants.GATEWAY_AUTH_HEADER);
         String currentId = request.getHeader(JwtClaimsConstant.CURRENT_ID);
 
         if (!StringUtils.hasText(gatewayAuthProperties.getAuthSecret())) {
@@ -61,12 +60,12 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             return false;
         }
         if (!StringUtils.hasText(gatewayAuth)) {
-            log.warn("请求缺少网关注入头 {}, path: {}", GatewayAuthConstant.GATEWAY_AUTH_HEADER, path);
+            log.warn("请求缺少网关注入头 {}, path: {}", GatewayAuthConstants.GATEWAY_AUTH_HEADER, path);
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             return false;
         }
         if (!gatewayAuthProperties.getAuthSecret().equals(gatewayAuth)) {
-            log.warn("网关注入头 {} 校验失败, path: {}", GatewayAuthConstant.GATEWAY_AUTH_HEADER, path);
+            log.warn("网关注入头 {} 校验失败, path: {}", GatewayAuthConstants.GATEWAY_AUTH_HEADER, path);
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             return false;
         }

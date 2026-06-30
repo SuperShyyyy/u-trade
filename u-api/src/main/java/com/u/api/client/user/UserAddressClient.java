@@ -6,7 +6,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "user-service", path = "/inner/order/addresses")
+@FeignClient(name = "user-service", path = "/inner/order/addresses",
+        configuration = com.u.common.config.CommonFeignConfiguration.class,
+        fallbackFactory = com.u.api.client.fallback.UserAddressClientFallbackFactory.class)
 public interface UserAddressClient {
 
     @GetMapping

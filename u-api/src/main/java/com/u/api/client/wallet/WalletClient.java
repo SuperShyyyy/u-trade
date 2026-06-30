@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 
-@FeignClient(name = "wallet-service", path = "/inner/wallet")
+@FeignClient(name = "wallet-service", path = "/inner/wallet",
+        configuration = com.u.common.config.CommonFeignConfiguration.class,
+        fallbackFactory = com.u.api.client.fallback.WalletClientFallbackFactory.class)
 public interface WalletClient {
 
     @PostMapping("/freeze")

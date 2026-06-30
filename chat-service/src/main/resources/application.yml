@@ -26,6 +26,7 @@ spring:
     redis:
       host: 192.168.150.101
       port: 6379
+      password: ${u.redis.password}
   rabbitmq:
     host: 192.168.150.101
     port: 5672

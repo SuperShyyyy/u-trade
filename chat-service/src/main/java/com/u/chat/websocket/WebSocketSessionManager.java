@@ -3,9 +3,12 @@ package com.u.chat.websocket;
 import com.u.chat.config.ChatProperties;
 import com.u.chat.redis.ChatOnlineStatusService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,6 +92,26 @@ public class WebSocketSessionManager {
 
     public boolean isOnline(Long userId) {
         return getSession(userId).isPresent();
+    }
+
+    /**
+     * 定期清理已关闭的WebSocket Session，防止内存泄漏
+     * 每60秒执行一次
+     */
+    @Scheduled(fixedRate = 60000)
+    public void cleanupClosedSessions() {
+        List<WebSocketSession> closedSessions = new ArrayList<>();
+        for (WebSocketSession session : userSessions.values()) {
+            if (session == null || !session.isOpen()) {
+                closedSessions.add(session);
+            }
+        }
+        if (!closedSessions.isEmpty()) {
+            log.info("清理已关闭的WebSocket Session，数量: {}", closedSessions.size());
+            for (WebSocketSession session : closedSessions) {
+                remove(session);
+            }
+        }
     }
 
     private void syncRedisOnRegister(Long userId) {

@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "user-service", path = "/inner/admin/users")
+@FeignClient(name = "user-service", path = "/inner/admin/users",
+        configuration = com.u.common.config.CommonFeignConfiguration.class,
+        fallbackFactory = com.u.api.client.fallback.UserClientFallbackFactory.class)
 public interface UserClient {
 
     @GetMapping("/page")
@@ -23,4 +25,7 @@ public interface UserClient {
 
     @GetMapping("/credit-scores")
     Result<Map<Long, Integer>> getUserCreditScores(@RequestParam("userIds") List<Long> userIds);
+
+    @PostMapping("/reset-password")
+    Result<Void> resetPassword(@RequestParam("userId") Long userId, @RequestParam("newPassword") String newPassword);
 }

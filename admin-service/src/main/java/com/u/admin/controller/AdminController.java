@@ -4,15 +4,18 @@ package com.u.admin.controller;
 import com.u.api.dto.user.UserDTO;
 import com.u.admin.domain.dto.AdminDTO;
 import com.u.admin.domain.dto.LoginDTO;
+import com.u.admin.domain.dto.ResetPasswordDTO;
 import com.u.admin.domain.vo.AdminVO;
 import com.u.admin.domain.vo.LoginVO;
 import com.u.admin.service.IAdminService;
+import com.u.common.context.BaseContext;
 import com.u.common.result.PageDTO;
 import com.u.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -27,10 +30,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/admin")
 @Slf4j
 @Tag(name = "管理端接口")
+@RequiredArgsConstructor
 public class AdminController {
 
-    @Autowired
-    private IAdminService adminService;
+    private final IAdminService adminService;
 
     /**
      * B 端管理员登录 (兼容普通管理员和超级管理员)
@@ -38,13 +41,22 @@ public class AdminController {
      */
     @Operation(summary = "管理员登录接口")
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody LoginDTO loginDTO) {
+    public Result<LoginVO> login(@RequestBody @Valid LoginDTO loginDTO) {
         log.info("管理员登录：{}", loginDTO.getUsername());
 
         LoginVO loginVO = adminService.adminLogin(loginDTO);
 
         return Result.success(loginVO);
     }
+
+    @Operation(summary = "管理员登出")
+    @PostMapping("/logout")
+    public Result<String> logout() {
+        Long adminId = BaseContext.getCurrentId();
+        adminService.logout(adminId);
+        return Result.success("已登出");
+    }
+
     @Operation(summary = "分页查询管理员列表")
     @GetMapping ("/system/list")
     public Result<PageDTO<AdminVO>> pageQueryAdmin(
@@ -57,7 +69,7 @@ public class AdminController {
 
     @Operation(summary = "创建管理员账号")
     @PostMapping("/system/user")
-    public Result save(@RequestBody AdminDTO adminDTO) {
+    public Result save(@RequestBody @Valid AdminDTO adminDTO) {
         log.info("创建新管理员账号: {}", adminDTO.getUsername());
         adminService.saveAdmin(adminDTO);
         return Result.success();
@@ -103,6 +115,14 @@ public class AdminController {
     ){
         adminService.updateUserStatus(id, status);
         return Result.success();
+    }
+
+    @Operation(summary = "重置用户密码")
+    @PutMapping("/user/reset-password")
+    public Result<String> resetUserPassword(@RequestBody @Valid ResetPasswordDTO resetPasswordDTO) {
+        log.info("管理员重置用户密码：userId={}", resetPasswordDTO.getUserId());
+        adminService.resetUserPassword(resetPasswordDTO.getUserId(), resetPasswordDTO.getNewPassword());
+        return Result.success("密码重置成功");
     }
 
 

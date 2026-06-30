@@ -5,6 +5,7 @@ import com.u.api.dto.user.UserDTO;
 import com.u.admin.domain.dto.AdminDTO;
 import com.u.admin.domain.dto.LoginDTO;
 import com.u.admin.domain.po.Admin;
+import com.u.admin.domain.vo.AdminVO;
 import com.u.admin.domain.vo.LoginVO;
 import com.u.common.result.PageDTO;
 
@@ -20,7 +21,7 @@ public interface IAdminService extends IService<Admin> {
 
     LoginVO adminLogin(LoginDTO loginDTO);
 
-    PageDTO pageQuery(int page, int pageSize);
+    PageDTO<AdminVO> pageQuery(int page, int pageSize);
 
     void saveAdmin(AdminDTO adminDTO);
 
@@ -31,4 +32,12 @@ public interface IAdminService extends IService<Admin> {
     void updateUserStatus(Long id, Integer status);
 
     PageDTO<UserDTO> pageQueryUser(int page, int pageSize);
+
+    /**
+     * 重置用户密码
+     */
+    void resetUserPassword(Long userId, String newPassword);
+
+    /** 管理员登出 */
+    void logout(Long adminId);
 }

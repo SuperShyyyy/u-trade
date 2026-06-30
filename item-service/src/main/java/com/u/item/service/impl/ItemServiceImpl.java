@@ -69,11 +69,10 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         }
 
         // 更新数据�?
-        Item update = new Item();
-        update.setId(id);
-        update.setStatus(status);
-        update.setUpdateTime(LocalDateTime.now());
-        this.updateById(update);
+        // 涔愯閿佹洿鏂帮細浣跨敤鏌ュ埌鐨?item 瀵硅薄锛堟惡甯?version锛夛紝MyBatis-Plus @Version 鑷姩杩藉姞 WHERE version=?
+        item.setStatus(status);
+        item.setUpdateTime(LocalDateTime.now());
+        this.updateById(item);
 
         // 获取最新数据（用于发送MQ�?
         Item updatedItem = this.getById(id);
@@ -105,7 +104,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements II
         item.setTitle(itemDTO.getTitle());
         item.setDescription(itemDTO.getDescription());
         item.setPrice(itemDTO.getOriginalPrice());
-        item.setOriginalPrice(itemDTO.getOriginalPrice());
+        item.setOriginalPrice(itemDTO.getOriginalPrice());  // 二手交易无打折机制，price 与 originalPrice 保持一致
         item.setCategoryId(itemDTO.getCategoryId());
 
         item.setSellerId(userId);

@@ -15,21 +15,21 @@ public class SerialNoUtil {
 
     /**
      * 生成订单号
-     * @return 订单号，格式：ORD + yyyyMMddHHmmssSSS + 4位随机数
+     * @return 订单号，格式：ORD + yyyyMMddHHmmssSSS + 6位随机数
      */
     public static String generateOrderNo() {
         return "ORD" + now() + random6();
     }
     /**
      * 生成支付号
-     * @return 支付号，格式：PAY + yyyyMMddHHmmssSSS + 4位随机数
+     * @return 支付号，格式：PAY + yyyyMMddHHmmssSSS + 6位随机数
      */
     public static String generatePayNo() {
         return "PAY" + now() + random6();
     }
     /**
      * 生成物流号
-     * @return 物流号，格式：SHIP + yyyyMMddHHmmssSSS + 4位随机数
+     * @return 物流号，格式：SHIP + yyyyMMddHHmmssSSS + 6位随机数
      */
     public static String generateShipmentNo() {
         return "SHIP" + now() + random6();
@@ -52,7 +52,7 @@ public class SerialNoUtil {
      * 生成6位随机数，前面补0
      */
     private static String random6() {
-        int num = RANDOM.nextInt(1000000); // 0~9999
+        int num = RANDOM.nextInt(1000000); // 0~999999
         return String.format("%06d", num);
     }
 

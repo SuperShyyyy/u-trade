@@ -15,7 +15,7 @@ import java.sql.Connection;
 @EnableDiscoveryClient
 // Feign 扫描 UserClient 所在包
 @EnableFeignClients(basePackages = "com.u.api.client.user")
-@SpringBootApplication(scanBasePackages = {"com.u.item", "com.u.common"})
+@SpringBootApplication(scanBasePackages = {"com.u.item", "com.u.common", "com.u.api"})
 public class ItemServiceApplication {
 
     public static void main(String[] args) {

@@ -60,4 +60,12 @@ public class RedisConstant {
 
     //mq结算
     public static final String WALLET_SETTLE = "wallet:settle:";
+
+    // ==================== 鉴权体系 Redis Key ====================
+    // 用户封禁：value="1"，TTL 与 Token 有效期一致
+    public static final String USER_BAN_KEY = "user:ban:";
+    // Token 版本号：int，logout/改密/封禁时 INCR，TTL 与 Token 有效期一致
+    public static final String TOKEN_VERSION_KEY = "user:tokenVersion:";
+    // 当前会话：UUID，单设备登录时新登录覆盖旧 session
+    public static final String USER_SESSION_KEY = "user:session:";
 }

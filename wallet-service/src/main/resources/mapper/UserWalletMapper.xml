@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.u.wallet.mapper.UserWalletMapper">
 
-    <!-- 这个没问题 -->
+    <!-- 买家扣减冻结金额：增加 frozen_amount >= #{frozenAmount} 防御性约束 -->
     <update id="updateBuyerWallet">
         UPDATE user_wallet
         SET frozen_amount = #{frozenAmount},
@@ -10,9 +10,10 @@
             version = version + 1
         WHERE id = #{id}
           AND version = #{version}
+          AND frozen_amount &gt;= #{frozenAmount}
     </update>
 
-    <!-- 这个没问题 -->
+    <!-- 卖家加余额 -->
     <update id="updateSellerWallet">
         UPDATE user_wallet
         SET balance = #{balance},
@@ -22,7 +23,7 @@
           AND version = #{version}
     </update>
 
-    <!-- ✅ 修正了参数名：balance -> after, totalIncome -> income -->
+    <!-- 充值加余额 -->
     <update id="updateRechargeWallet">
         UPDATE user_wallet
         SET balance = #{after},
@@ -32,7 +33,7 @@
           AND version = #{version}
     </update>
 
-    <!-- ✅ 修正了参数名：balance -> balanceAfter, frozenAmount -> frozenAfter -->
+    <!-- 冻结：增加 balance >= #{balanceAfter} 约束，防止余额变负 -->
     <update id="updateFreezeWallet">
         UPDATE user_wallet
         SET balance = #{balanceAfter},
@@ -40,9 +41,10 @@
             version = version + 1
         WHERE id = #{id}
           AND version = #{version}
+          AND balance &gt;= #{balanceAfter}
     </update>
 
-    <!-- ✅ 修正了参数名：balance -> balanceAfter, frozenAmount -> frozenAfter -->
+    <!-- 解冻：增加 frozen_amount >= #{frozenAfter} 约束 -->
     <update id="updateUnfreezeWallet">
         UPDATE user_wallet
         SET balance = #{balanceAfter},
@@ -50,9 +52,10 @@
             version = version + 1
         WHERE id = #{id}
           AND version = #{version}
+          AND frozen_amount &gt;= #{frozenAfter}
     </update>
 
-    <!-- 这个没问题 -->
+    <!-- 提现：增加 balance >= #{balance} 约束，防止余额变负 -->
     <update id="updateWithdrawWallet">
         UPDATE user_wallet
         SET balance = #{balance},
@@ -60,6 +63,7 @@
             version = version + 1
         WHERE id = #{id}
           AND version = #{version}
+          AND balance &gt;= #{balance}
     </update>
 
 </mapper>

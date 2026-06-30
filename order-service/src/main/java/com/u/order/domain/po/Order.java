@@ -3,7 +3,6 @@ package com.u.order.domain.po;
 import java.math.BigDecimal;
 
 import com.baomidou.mybatisplus.annotation.*;
-
 import java.time.LocalDateTime;
 import java.io.Serializable;
 
@@ -108,9 +107,9 @@ public class Order implements Serializable {
     private ItemSnapshotDTO itemSnapshot;
 
     private LocalDateTime updatedAt;
-/*
-    @TableField("version")
-    @Version // MyBatis-Plus 自动处理版本号*/
+
+    @Version
+    @Schema(description = "乐观锁版本号")
     private Integer version;
 
     @Schema(description = "发货时间")

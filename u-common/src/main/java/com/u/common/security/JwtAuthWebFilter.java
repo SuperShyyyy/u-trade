@@ -1,6 +1,5 @@
 package com.u.common.security;
 
-import com.u.common.constant.GatewayAuthConstant;
 import com.u.common.constant.InternalAuthConstant;
 import com.u.common.constant.JwtClaimsConstant;
 import com.u.common.context.BaseContext;
@@ -51,7 +50,7 @@ public class JwtAuthWebFilter implements WebFilter {
             return chain.filter(exchange);
         }
 
-        String gatewayAuth = request.getHeaders().getFirst(GatewayAuthConstant.GATEWAY_AUTH_HEADER);
+        String gatewayAuth = request.getHeaders().getFirst(GatewayAuthConstants.GATEWAY_AUTH_HEADER);
         String currentId = request.getHeaders().getFirst(JwtClaimsConstant.CURRENT_ID);
 
         if (!StringUtils.hasText(gatewayAuthProperties.getAuthSecret())
@@ -68,7 +67,6 @@ public class JwtAuthWebFilter implements WebFilter {
             String sourceType = request.getHeaders().getFirst(JwtClaimsConstant.SOURCE_TYPE);
 
             if (isAdminPath(path) && !StringUtils.hasText(role)) {
-                BaseContext.remove();
                 log.warn("越权尝试: 非管理员角色访问 {}", path);
                 response.setStatusCode(HttpStatus.FORBIDDEN);
                 return response.setComplete();
@@ -77,19 +75,19 @@ public class JwtAuthWebFilter implements WebFilter {
             BaseContext.setCurrentId(parsedId);
             BaseContext.setCurrentRole(role);
             BaseContext.setCurrentSourceType(sourceType);
-            return chain.filter(exchange);
+            return chain.filter(exchange)
+                    .doFinally(signal -> BaseContext.remove());
         } catch (NumberFormatException ex) {
             log.warn("网关注入身份头格式异常: {}", currentId);
+            BaseContext.remove();
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return response.setComplete();
-        } finally {
-            BaseContext.remove();
         }
     }
 
     private boolean isAdminPath(String path) {
-        return path.startsWith(GatewayAuthConstant.ADMIN_PATH_PREFIX)
-                || path.startsWith(GatewayAuthConstant.MANAGER_PATH_PREFIX);
+        return path.startsWith(GatewayAuthConstants.ADMIN_PATH_PREFIX)
+                || path.startsWith(GatewayAuthConstants.MANAGER_PATH_PREFIX);
     }
 
     private boolean isInternalPath(String path) {

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.u.api.client.user.UserClient;
 import com.u.api.dto.user.UserDTO;
 import com.u.common.constant.JwtClaimsConstant;
+import com.u.common.constant.RedisConstant;
 import com.u.common.constant.RoleConstant;
 import com.u.admin.domain.dto.AdminDTO;
 import com.u.admin.domain.dto.LoginDTO;
@@ -26,6 +27,7 @@ import com.u.common.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 系统管理员表 服务实现类
@@ -44,11 +48,23 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     private final JwtProperties jwtProperties;
     private final UserClient userClient;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    private static final String LOGIN_FAIL_PREFIX = "admin:login:fail:";
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final long LOCK_DURATION_MINUTES = 15;
+
     @Override
     public LoginVO adminLogin(LoginDTO loginDTO) {
+        // 登录限流：检查是否被临时锁定
+        String failKey = LOGIN_FAIL_PREFIX + loginDTO.getUsername();
+        String failCountStr = stringRedisTemplate.opsForValue().get(failKey);
+        int failCount = failCountStr != null ? Integer.parseInt(failCountStr) : 0;
+        if (failCount >= MAX_LOGIN_ATTEMPTS) {
+            throw new BusinessException("登录失败次数过多，账号已被临时锁定，请" + LOCK_DURATION_MINUTES + "分钟后重试");
+        }
         Admin admin = lambdaQuery()
                 .eq(Admin::getUsername, loginDTO.getUsername())
                 .one();
@@ -58,33 +74,52 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
 
         if (!passwordEncoder.matches(loginDTO.getPassword(), admin.getPassword())) {
+            // 登录失败，增加失败计数
+            stringRedisTemplate.opsForValue().set(failKey, String.valueOf(failCount + 1),
+                    LOCK_DURATION_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
             throw new BusinessException("密码错误");
         }
+
+        // 登录成功，清除失败计数
+        stringRedisTemplate.delete(failKey);
 
         if (admin.getStatus() != null && admin.getStatus() == 0) {
             throw new BusinessException("账号已被禁用");
         }
 
         Integer dbRole = admin.getRole();
-        String roleStr;
+        String roleStr = dbRole == 2 ? RoleConstant.SUPER_ADMIN : RoleConstant.COMMON_ADMIN;
 
-        if (dbRole == 2) {
-            roleStr = RoleConstant.SUPER_ADMIN;
-        } else {
-            roleStr = RoleConstant.COMMON_ADMIN;
+        // 获取/初始化 tokenVersion
+        String versionKey = RedisConstant.TOKEN_VERSION_KEY + admin.getId();
+        String v = stringRedisTemplate.opsForValue().get(versionKey);
+        int tokenVersion = (v != null) ? Integer.parseInt(v) : 0;
+        if (v == null) {
+            stringRedisTemplate.opsForValue().set(versionKey, "0",
+                    jwtProperties.getAdminTtl(), TimeUnit.MILLISECONDS);
         }
+
+        // 生成 sessionId，单设备登录互踢
+        String sessionId = UUID.randomUUID().toString();
+        String sessionKey = RedisConstant.USER_SESSION_KEY + admin.getId();
+        stringRedisTemplate.opsForValue().set(sessionKey, sessionId,
+                jwtProperties.getAdminTtl(), TimeUnit.MILLISECONDS);
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.CURRENT_ID, admin.getId());
         claims.put(JwtClaimsConstant.ROLE, roleStr);
         claims.put(JwtClaimsConstant.SOURCE_TYPE, "ADMIN");
+        claims.put(JwtClaimsConstant.SESSION_ID, sessionId);
+        claims.put(JwtClaimsConstant.TOKEN_VERSION, tokenVersion);
 
         String token = JwtUtil.createJWT(
                 jwtProperties.getAdminSecretKey(),
                 jwtProperties.getAdminTtl(),
                 claims
         );
-        log.info("当前使用的密钥: {}", jwtProperties.getAdminSecretKey());
+
+        log.info("管理员登录成功, adminId={}, sessionId={}, tokenVersion={}",
+                admin.getId(), sessionId, tokenVersion);
 
         return LoginVO.builder()
                 .id(admin.getId())
@@ -218,6 +253,25 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         ensureSuccess(updateUserResult, "更新用户状态失败");
     }
 
+    @Override
+    public void resetUserPassword(Long userId, String newPassword) {
+        String currentRole = BaseContext.getCurrentRole();
+        if (!RoleConstant.COMMON_ADMIN.equals(currentRole) && !RoleConstant.SUPER_ADMIN.equals(currentRole)) {
+            throw new PermissionDeniedException("权限不足，无法重置用户密码");
+        }
+        if (userId == null) {
+            throw new BusinessException("用户ID不能为空");
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new BusinessException("新密码不能为空");
+        }
+        if (newPassword.length() < 6 || newPassword.length() > 32) {
+            throw new BusinessException("新密码长度需在6-32位之间");
+        }
+        Result<Void> result = userClient.resetPassword(userId, newPassword);
+        ensureSuccess(result, "重置用户密码失败");
+    }
+
     private void ensureSuccess(Result<?> result, String defaultErrorMsg) {
         if (result == null) {
             throw new BusinessException(defaultErrorMsg);
@@ -225,6 +279,26 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if (!ResultCode.SUCCESS.equals(result.getCode())) {
             String message = result.getMessage() == null ? defaultErrorMsg : result.getMessage();
             throw new BusinessException(message);
+        }
+    }
+
+    @Override
+    public void logout(Long adminId) {
+        incrTokenVersion(adminId);
+        stringRedisTemplate.delete(RedisConstant.USER_SESSION_KEY + adminId);
+    }
+
+    private void incrTokenVersion(Long adminId) {
+        String key = RedisConstant.TOKEN_VERSION_KEY + adminId;
+        long ttl = jwtProperties.getAdminTtl();
+        try {
+            Long newVersion = stringRedisTemplate.opsForValue().increment(key);
+            if (newVersion != null) {
+                stringRedisTemplate.expire(key, ttl, TimeUnit.MILLISECONDS);
+            }
+            log.info("Admin tokenVersion 递增成功, adminId={}, newVersion={}", adminId, newVersion);
+        } catch (Exception e) {
+            log.error("Admin tokenVersion 递增失败 (Redis异常), adminId={}", adminId, e);
         }
     }
 }

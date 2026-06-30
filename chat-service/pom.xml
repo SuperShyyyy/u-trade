@@ -21,7 +21,7 @@
         <java.version>17</java.version>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <springdoc.version>2.6.0</springdoc.version>
-        <knife4j.version>4.2.0</knife4j.version>
+        <knife4j.version>4.3.0</knife4j.version>
     </properties>
 
     <!-- 仓库，确保 Knife4j 可用 -->
@@ -113,47 +113,19 @@
             <version>${springdoc.version}</version>
         </dependency>
 
-        <!-- Knife4j -->
+        <!-- Knife4j（Spring Boot 3 + OpenAPI3 兼容版本） -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-spring-boot-starter</artifactId>
-            <version>3.0.3</version>
-        </dependency>
-
-        <!-- Maven 依赖 -->
-        <!-- Maven 依赖 -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version> <!-- 请使用最新版 -->
+            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+            <version>4.3.0</version>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- 编译器插件，支持 Lombok -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>1.18.30</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-
-            <!-- Spring Boot 打包插件 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.3.4</version>
                 <configuration>
                     <excludes>
                         <exclude>

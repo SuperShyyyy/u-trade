@@ -57,6 +57,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
+    @org.springframework.context.annotation.Profile("!prod")
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
@@ -66,6 +67,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
+    @org.springframework.context.annotation.Profile("!prod")
     public GroupedOpenApi adminApi() {
         return GroupedOpenApi.builder()
                 .group("管理端")
@@ -74,6 +76,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
+    @org.springframework.context.annotation.Profile("!prod")
     public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
                 .group("用户端")
@@ -84,10 +87,10 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("*")
+                .allowedOriginPatterns("${cors.allowed-origins:*}")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(false)
+                .allowedHeaders("Authorization", "Content-Type", "token", "X-Gateway-Auth")
+                .allowCredentials(true)
                 .maxAge(3600);
     }
 

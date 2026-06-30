@@ -167,8 +167,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
             // =========================
             // FIX 2：避免瞬间失败
+            // leaseTime=-1 启用 Redisson 看门狗自动续期（默认30s续一次，业务完成后 afterCompletion 主动释放）
             // =========================
-            isLock = lock.tryLock(3, 30, TimeUnit.SECONDS);
+            isLock = lock.tryLock(3, -1, TimeUnit.SECONDS);
             if (!isLock) {
                 throw new BusinessException("商品正在被抢购，请稍后重试");
             }
@@ -187,12 +188,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             // =========================
             // FIX 5：事务提交后执行
             // =========================
+            final boolean finalIsLock = isLock;
+            final RLock finalLock = lock;
             TransactionSynchronizationManager.registerSynchronization(
                     new TransactionSynchronization() {
                         @Override
-                        public void afterCommit() {
-                            sendDelayMessageLazy(order);
-                            clearOrderCache(order);
+                        public void afterCompletion(int status) {
+                            // 事务完成后（无论成功或回滚）释放分布式锁
+                            unlockQuietly(finalIsLock, finalLock);
+                            if (finalIsLock && finalLock.isHeldByCurrentThread()) {
+                                log.debug("订单 {} 分布式锁已释放，事务状态={}", itemId, status);
+                            }
                         }
                     }
             );
@@ -221,16 +227,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
             throw new BusinessException("订单创建失败，请稍后重试");
 
-        } finally {
-
-            if (isLock && lock.isHeldByCurrentThread()) {
-                lock.unlock();
-            }
         }
     }
-    //A.2 辅助方法：在本地事务创建订单
-    @Transactional(rollbackFor = Exception.class)
-    public Order createOrderInLocalTransaction(
+    //A.2 辅助方法：在本地事务创建订单（自调用不经过AOP代理，事务由外部orderSubmit管理）
+    private Order createOrderInLocalTransaction(
             Long userId,
             ItemTradeDTO item,
             UserAddressDTO address) {
@@ -364,10 +364,26 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         boolean locked = false;
 
         try {
-            locked = payLock.tryLock(0, 30, TimeUnit.SECONDS);
+            locked = payLock.tryLock(0, -1, TimeUnit.SECONDS);
             if (!locked) {
                 throw new BusinessException("订单正在支付处理中，请稍后重试");
             }
+
+            // 事务提交后释放分布式锁，防止锁先于事务释放导致并发问题
+            // 注册时机必须在业务逻辑之前，确保异常路径也能释放锁
+            final boolean finalLocked = locked;
+            final RLock finalPayLock = payLock;
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCompletion(int status) {
+                            if (finalLocked && finalPayLock.isHeldByCurrentThread()) {
+                                finalPayLock.unlock();
+                                log.debug("支付分布式锁已释放，orderNo={}，事务状态={}", orderNo, status);
+                            }
+                        }
+                    }
+            );
 
             // 1. 查询订单
             Order order = lambdaQuery()
@@ -393,13 +409,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             boolean walletFrozen = PayMethodConstant.BALANCE.equals(payResult.getPayType());
 
             try {
-                // 3. 更新订单状态为已支付
+                // 3. 乐观锁更新订单状态为已支付
+                // 注意：update(null, wrapper) 不触发 @Version 自动乐观锁，需手动 .eq(version) + .setSql(version+1)
                 LambdaUpdateWrapper<Order> orderUpdate = new LambdaUpdateWrapper<>();
                 orderUpdate.eq(Order::getOrderNo, orderNo)
                         .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
+                        .eq(Order::getVersion, order.getVersion())
                         .set(Order::getStatus, OrderStatusConstant.PAID)
                         .set(Order::getPaymentMethod, String.valueOf(payResult.getPayType()))
-                        .set(Order::getPaidAt, LocalDateTime.now());
+                        .set(Order::getPaidAt, LocalDateTime.now())
+                        .setSql("version = version + 1");
 
                 int orderUpdated = orderMapper.update(null, orderUpdate);
                 if (orderUpdated == 0) {
@@ -418,11 +437,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException("系统繁忙，请稍后再试");
-        } finally {
-            if (locked && payLock.isHeldByCurrentThread()) {
-                payLock.unlock();
-            }
         }
+
     }
     //B.2 辅助方法 构建支付返回VO
     private OrderPaymentVO buildPaymentVO(Order order, Integer payType, String prepayInfo) {
@@ -602,7 +618,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     //E 用户取消订单 主方法
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void userCancelById(Long orderId)  {
         Long userId = BaseContext.getCurrentId();
@@ -616,36 +632,47 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if(!order.getStatus().equals(OrderStatusConstant.WAIT_PAY)){
             throw new BusinessException("订单状态异常，无法取消");
         }
-        cancelOrderInternal(orderId);
+        cancelOrderInternal(orderId, "用户主动取消");
     }
 
-    //E.2 辅助方法 取消订单
-    @Transactional
+    //E.2 辅助方法 取消订单（自调用不经过AOP代理，事务由外部方法管理）
     public void cancelOrderInternal(Long orderId) {
-        // 1. 更新订单状态，仅当状态为待支付时才更新
-        boolean updated = lambdaUpdate()
-                .eq(Order::getId, orderId)
-                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
-                .set(Order::getStatus, OrderStatusConstant.CANCELLED)
-                .set(Order::getCancelledAt, LocalDateTime.now())
-                .set(Order::getCancelReason, "超时未支付自动取消")
-                .update();
+        cancelOrderInternal(orderId, "超时未支付自动取消");
+    }
 
-        if (!updated) {
-            // 订单可能已被支付或已取消，直接返回（无需抛异常，视为处理成功）
-            log.info("订单 {} 状态已变更，无需自动取消", orderId);
+    //E.2 辅助方法 取消订单（可指定原因）
+    @Transactional
+    public void cancelOrderInternal(Long orderId, String cancelReason) {
+        // 1. 先查询获取 version
+        Order order = getById(orderId);
+        if (order == null || !OrderStatusConstant.WAIT_PAY.equals(order.getStatus())) {
+            log.info("订单 {} 状态已变更，无需取消", orderId);
             return;
         }
 
-        Order order = getById(orderId);
-        if (order != null) {
-            if (order.getItemId() != null) {
-                try {
+        // 2. 乐观锁更新订单状态
+        // 注意：lambdaUpdate().update() 底层调 update(null, wrapper)，不触发 @Version 自动乐观锁
+        boolean updated = lambdaUpdate()
+                .eq(Order::getId, orderId)
+                .eq(Order::getStatus, OrderStatusConstant.WAIT_PAY)
+                .eq(Order::getVersion, order.getVersion())
+                .set(Order::getStatus, OrderStatusConstant.CANCELLED)
+                .set(Order::getCancelledAt, LocalDateTime.now())
+                .set(Order::getCancelReason, cancelReason)
+                .setSql("version = version + 1")
+                .update();
+
+        if (!updated) {
+            log.info("订单 {} 乐观锁冲突，状态已变更，无需取消", orderId);
+            return;
+        }
+
+        if (order.getItemId() != null) {
+            try {
                     ensureSuccess(itemClient.releaseItem(order.getItemId()), "商品状态释放失败");
                 } catch (Exception e) {
                     log.warn("自动取消订单成功，但商品状态释放失败！订单ID: {}, 商品ID: {}", orderId, order.getItemId(), e);
                 }
-            }
             clearOrderCache(order);
         }
     }
@@ -673,15 +700,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (currentVersion == null) {
             currentVersion = 0;
         }
-        //更新
+        // 更新（update(null, wrapper) 不触发 @Version 自动乐观锁，需手动处理版本号）
         LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Order::getId, order.getId())
-                // 1.判断版本号 避免高并发问题
                 .eq(Order::getVersion, currentVersion)
-                // 2. 更新状态
                 .set(Order::getStatus, OrderStatusConstant.FINISHED)
                 .set(Order::getCompletedAt, LocalDateTime.now())
-                // 3. 手动更改版本号 +1
                 .setSql("version = version + 1");
 
         if (!this.update(updateWrapper)) {
@@ -708,13 +732,41 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 5. 删除发货时在redis创建的过期时间
         stringRedisTemplate.opsForZSet().remove("order:auto_confirm:queue", String.valueOf(orderId));
 
+        // 6. 余额支付走 MQ 异步结算（与自动确认路径保持一致，避免双结算）
         if (String.valueOf(PayMethodConstant.BALANCE).equals(order.getPaymentMethod())) {
-            ensureSuccess(walletClient.transferFrozenToSeller(
+            String messageId = order.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
+            OrderSettlementMessage msg = new OrderSettlementMessage(
                     order.getBuyerId(),
                     order.getSellerId(),
                     order.getTotalPrice(),
                     order.getOrderNo()
-            ), "资金结算失败");
+            );
+            msg.setMessageId(messageId);
+            msg.setTimestamp(System.currentTimeMillis());
+
+            MqMessageLog mqLog = new MqMessageLog();
+            mqLog.setMessageId(messageId);
+            mqLog.setExchange(RabbitMQConstant.EXCHANGE_ORDER_SETTLE_EXEC);
+            mqLog.setRoutingKey(RabbitMQConstant.ROUTING_KEY_ORDER_SETTLE_EXEC);
+            mqLog.setMessageBody(JSON.toJSONString(msg));
+            mqLog.setStatus(MqMessageLogStatus.SENDING);
+            mqLog.setRetryCount(0);
+            mqLog.setCreateTime(LocalDateTime.now());
+            mqMessageLogService.save(mqLog);
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            try {
+                                orderSettlementSender.send(msg);
+                                mqMessageLogService.updateStatus(messageId, MqMessageLogStatus.SUCCESS, null);
+                            } catch (Exception e) {
+                                log.error("订单 {} MQ发送失败，等待定时任务补偿 messageId={}", orderId, messageId, e);
+                            }
+                        }
+                    }
+            );
         }
 
     }
@@ -737,13 +789,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("当前状态不可发货");
         }
 
-        // 3. 更新订单状态
+        // 3. 乐观锁更新订单状态（lambdaUpdate().update() 不触发 @Version 自动乐观锁）
         boolean orderUpdated = lambdaUpdate()
                 .eq(Order::getId, orderId)
                 .eq(Order::getSellerId, sellerId)
                 .in(Order::getStatus, OrderStatusConstant.PAID, OrderStatusConstant.SHIPPED)
+                .eq(Order::getVersion, dbOrder.getVersion())
                 .set(Order::getStatus, OrderStatusConstant.SHIPPED)
                 .set(Order::getShippedAt, now)
+                .setSql("version = version + 1")
                 .update();
 
         if (!orderUpdated) {
@@ -855,6 +909,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     /**
      * 分页缓存 key 通常携带动态维度（page/size/status），不能只删固定前缀 key。
      * 使用 SCAN 按前缀匹配并批量删除，避免删不干净。
+     * 增加最大迭代次数限制，防止SCAN在大量key场景下长时间阻塞。
      */
     private void deleteKeysByPrefix(String prefix) {
         Set<String> matchedKeys = new HashSet<>();
@@ -868,10 +923,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return;
         }
 
+        // 限制最大迭代次数，防止SCAN在大量key场景下长时间阻塞
+        final int MAX_ITERATIONS = 100;
+        int iterations = 0;
+
         try (RedisConnection connection = factory.getConnection();
              Cursor<byte[]> cursor = connection.scan(scanOptions)) {
-            while (cursor.hasNext()) {
+            while (cursor.hasNext() && iterations < MAX_ITERATIONS) {
                 matchedKeys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+                iterations++;
+            }
+            if (iterations >= MAX_ITERATIONS) {
+                log.warn("SCAN迭代次数达到上限({}), prefix={}, 已收集key数={}, 可能有遗漏",
+                        MAX_ITERATIONS, prefix, matchedKeys.size());
             }
         } catch (Exception e) {
             log.error("按前缀扫描缓存 key 失败，prefix={}", prefix, e);
@@ -886,15 +950,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     //I 处理单订单确认收货
     @Transactional(rollbackFor = Exception.class)
     public void processSingleOrderConfirm(Long orderId) {
-        // 1. 乐观锁更新订单状态
+        // 1. 先查询获取 version
+        Order order = getById(orderId);
+        if (order == null || !OrderStatusConstant.SHIPPED.equals(order.getStatus())) {
+            log.info("订单 {} 状态已变更或已处理，跳过", orderId);
+            return;
+        }
+
+        // 2. 乐观锁更新订单状态（lambdaUpdate().update() 不触发 @Version 自动乐观锁）
         boolean updated = lambdaUpdate()
                 .eq(Order::getId, orderId)
                 .eq(Order::getStatus, OrderStatusConstant.SHIPPED)
+                .eq(Order::getVersion, order.getVersion())
                 .set(Order::getStatus, OrderStatusConstant.FINISHED)
                 .set(Order::getCompletedAt, LocalDateTime.now())
+                .setSql("version = version + 1")
                 .update();
         if (!updated) {
-            log.info("订单 {} 状态已变更或已处理，跳过", orderId);
+            log.info("订单 {} 乐观锁冲突，状态已变更，跳过", orderId);
             return;
         }
 
@@ -911,27 +984,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("物流状态更新失败，防止数据不一致");
         }
 
-        // 3. 查询订单信息并作防错判空
-        Order order = orderMapper.selectById(orderId);
-        if (order == null) {
+        // 3. 重新查询订单信息（获取更新后的支付方式等字段）
+        Order freshOrder = orderMapper.selectById(orderId);
+        if (freshOrder == null) {
             log.error("订单 {} 不存在", orderId);
             throw new BusinessException("订单不存在");
         }
 
-        // 4. 校验支付方式（假设 PaymentMethod 是 Integer/String，尽量避免用 String.valueOf 强转）
-        if (!String.valueOf(PayMethodConstant.BALANCE).equals(order.getPaymentMethod())) {
-            clearOrderCache(order);
+        // 4. 校验支付方式
+        if (!String.valueOf(PayMethodConstant.BALANCE).equals(freshOrder.getPaymentMethod())) {
+            clearOrderCache(freshOrder);
             log.info("订单 {} 自动确认完成（非余额支付，无需钱包结算）", orderId);
             return;
         }
 
         // 5. 构建并保存本地消息表
-        String messageId = order.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
+        String messageId = freshOrder.getOrderNo() + "_" + UUID.randomUUID().toString().replace("-", "");
         OrderSettlementMessage msg = new OrderSettlementMessage(
-                order.getBuyerId(),
-                order.getSellerId(),
-                order.getTotalPrice(),
-                order.getOrderNo()
+                freshOrder.getBuyerId(),
+                freshOrder.getSellerId(),
+                freshOrder.getTotalPrice(),
+                freshOrder.getOrderNo()
         );
         msg.setMessageId(messageId);
         msg.setTimestamp(System.currentTimeMillis());
@@ -969,7 +1042,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         );
 
         // 7. 清理缓存
-        clearOrderCache(order);
+        clearOrderCache(freshOrder);
         log.info("订单 {} 自动确认完成（消息已入库，等待事务提交后发送）", orderId);
     }
 

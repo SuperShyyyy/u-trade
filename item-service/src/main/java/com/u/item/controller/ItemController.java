@@ -8,6 +8,7 @@ import com.u.common.result.Result;
 import com.u.item.service.IItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,7 @@ public class ItemController {
 
     @Operation(summary = "用户上架商品接口")
     @PostMapping
-    public Result addItem(@RequestBody ItemDTO itemDTO){
+    public Result addItem(@RequestBody @Valid ItemDTO itemDTO){
         itemService.addItem(itemDTO);
         return Result.success();
     }

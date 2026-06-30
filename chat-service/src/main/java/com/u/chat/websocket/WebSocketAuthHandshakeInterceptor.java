@@ -1,11 +1,13 @@
 package com.u.chat.websocket;
 
 import com.u.common.constant.JwtClaimsConstant;
+import com.u.common.constant.RedisConstant;
 import com.u.common.properties.JwtProperties;
 import com.u.common.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -24,6 +26,7 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
     public static final String USER_ID_ATTR = "userId";
 
     private final JwtProperties jwtProperties;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request,
@@ -35,11 +38,16 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
         }
 
         String token = servletRequest.getServletRequest().getParameter("token");
-        String userIdParam = servletRequest.getServletRequest().getParameter("userId");
 
-        Long userId = resolveUserId(token, userIdParam);
+        Long userId = resolveUserId(token);
         if (userId == null) {
-            log.warn("WebSocket 握手鉴权失败: token 或 userId 无效");
+            log.warn("WebSocket 握手鉴权失败: token 无效");
+            return false;
+        }
+
+        // 有状态Token检查：用户是否被封禁
+        if (isUserBanned(userId)) {
+            log.warn("WebSocket 握手拒绝: 用户已被封禁, userId: {}", userId);
             return false;
         }
 
@@ -55,21 +63,14 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
         // no-op
     }
 
-    private Long resolveUserId(String token, String userIdParam) {
+    private Long resolveUserId(String token) {
         if (StringUtils.hasText(token)) {
             Long userIdFromToken = parseUserIdFromToken(token);
             if (userIdFromToken != null) {
                 return userIdFromToken;
             }
         }
-
-        if (StringUtils.hasText(userIdParam)) {
-            try {
-                return Long.parseLong(userIdParam.trim());
-            } catch (NumberFormatException e) {
-                log.warn("WebSocket userId 参数格式错误: {}", userIdParam);
-            }
-        }
+        log.warn("WebSocket 握手鉴权失败: token 无效");
         return null;
     }
 
@@ -94,5 +95,20 @@ public class WebSocketAuthHandshakeInterceptor implements HandshakeInterceptor {
             log.warn("WebSocket token 解析失败");
         }
         return null;
+    }
+
+    /**
+     * 检查用户是否被封禁
+     * 优先查Redis，Redis失败时降级放行（不做数据库查询，保持握手轻量）
+     */
+    private boolean isUserBanned(Long userId) {
+        String banKey = RedisConstant.USER_BAN_KEY + userId;
+        try {
+            String banValue = stringRedisTemplate.opsForValue().get(banKey);
+            return banValue != null;
+        } catch (Exception e) {
+            log.warn("WebSocket ban检查Redis异常，降级放行, userId: {}", userId);
+            return false;
+        }
     }
 }

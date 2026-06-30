@@ -10,27 +10,35 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.BeanUtils;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 /**
- * 商品同步 ES 消费�?
+ * 商品同步 ES 消费者
+ * Redis 幂等方案：每个消息在消费前检查 Redis key，消费成功后设置 key（TTL=5min）
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ItemEsListener {
 
+    private static final String IDEMPOTENT_KEY_PREFIX = "item:es:sync:";
+
     private final ItemEsService itemEsService;
-    // 修改字段注入
-    private final ElasticsearchClient elasticsearchClient; // 替代 RestHighLevelClient
+    private final ElasticsearchClient elasticsearchClient;
+    private final StringRedisTemplate stringRedisTemplate;
+
     @RabbitListener(queues = RabbitMQConstant.QUEUE_ITEM_SYNC)
     public void handleItemSync(ItemSyncMessage msg,
                                Channel channel,
@@ -42,19 +50,29 @@ public class ItemEsListener {
         log.info("收到商品同步消息，Operation: {}, MessageId: {}",
                 msg.getOperationType(), messageId);
 
+        // =========================
+        // Redis 幂等去重：同一消息 5 分钟内不重复消费
+        // =========================
+        String idempotentKey = IDEMPOTENT_KEY_PREFIX + messageId;
+        Boolean isNew = stringRedisTemplate.opsForValue()
+                .setIfAbsent(idempotentKey, "1", 5, TimeUnit.MINUTES);
+        if (Boolean.FALSE.equals(isNew)) {
+            log.info("ES 同步消息已消费，跳过，MessageId: {}", messageId);
+            channel.basicAck(tag, false);
+            return;
+        }
+
         try {
             // 根据操作类型执行不同逻辑
             switch (msg.getOperationType()) {
                 case ADD:
                 case UPDATE:
-                    // 新增或更新：构建文档并保�?
                     ItemDocument document = convertToDocument(msg);
                     itemEsService.save(document);
                     log.info("ES 同步成功 (ADD/UPDATE), ItemId: {}", msg.getId());
                     break;
 
                 case DELETE:
-                    // 删除：从 ES 删除
                     itemEsService.delete(msg.getId());
                     log.info("ES 同步成功 (DELETE), ItemId: {}", msg.getId());
                     break;
@@ -66,7 +84,8 @@ public class ItemEsListener {
 
                 default:
                     log.error("未知的操作类型：{}", msg.getOperationType());
-                    // 未知操作类型，不重试，进入死�?
+                    // 未知操作类型，不重试，进入死信
+                    stringRedisTemplate.delete(idempotentKey);
                     channel.basicNack(tag, false, false);
                     return;
             }
@@ -77,15 +96,29 @@ public class ItemEsListener {
         } catch (IllegalArgumentException e) {
             // 参数错误等永久异常，进入死信队列
             log.error("ES 同步失败 (永久异常), ItemId: {}, Error: {}", msg.getId(), e.getMessage());
+            stringRedisTemplate.delete(idempotentKey);
             channel.basicNack(tag, false, false);
 
         } catch (Exception e) {
-            // 统一捕获异常，决定是否重�?
+            // 统一捕获异常，决定是否重试
             log.error("ES 同步失败, MessageId: {}, Error: {}", messageId, e.getMessage(), e);
-            // 如果是参数错误等不可恢复异常，不重试
-            // 如果�?ES 宕机等临时异常，重试
-            boolean requeue = !(e instanceof IllegalArgumentException);
+            // 清除幂等 key，允许重试时重新消费
+            stringRedisTemplate.delete(idempotentKey);
+            // 限制重试次数：通过检查x-death header判断是否已重试超过3次
+            List<Map<String, ?>> xDeath = message.getMessageProperties().getReceivedDeliveryMode() != null
+                    ? (List<Map<String, ?>>) message.getMessageProperties().getHeaders().get("x-death")
+                    : null;
+            int retryCount = 0;
+            if (xDeath != null && !xDeath.isEmpty()) {
+                Long count = (Long) xDeath.get(0).get("count");
+                retryCount = count != null ? count.intValue() : 0;
+            }
+            // 重试超过3次则不重新入队，避免消息风暴
+            boolean requeue = !(e instanceof IllegalArgumentException) && retryCount < 3;
             channel.basicNack(tag, false, requeue);
+            if (!requeue) {
+                log.error("ES 同步消息重试次数超限，进入死信队列, MessageId: {}, retryCount: {}", messageId, retryCount);
+            }
         }
     }
 
@@ -131,14 +164,9 @@ public class ItemEsListener {
 
         log.info("ES 批量状态更新成功，更新数量: {}", ids.size());
     }
-    /**
-     * 消息体转 ES 文档
-     */
-    /**
-     * 消息体转 ES 文档
-     */
+
     private ItemDocument convertToDocument(ItemSyncMessage msg) {
-        log.info("开始转�?Document, 原始消息: {}", msg);
+        log.info("开始转换 Document, 原始消息: {}", msg);
 
         if (msg == null) {
             throw new IllegalArgumentException("ItemSyncMessage 为空");

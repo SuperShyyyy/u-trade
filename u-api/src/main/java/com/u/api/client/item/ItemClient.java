@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 
-@FeignClient(name = "item-service", path = "/inner/order/items")
+@FeignClient(name = "item-service", path = "/inner/order/items",
+        configuration = com.u.common.config.CommonFeignConfiguration.class,
+        fallbackFactory = com.u.api.client.fallback.ItemClientFallbackFactory.class)
 public interface ItemClient {
 
 /*

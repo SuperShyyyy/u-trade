@@ -11,7 +11,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @MapperScan("com.u.order.mapper")
-@SpringBootApplication(scanBasePackages = {"com.u.order", "com.u.common"})
+@SpringBootApplication(scanBasePackages = {"com.u.order", "com.u.common", "com.u.api"})
 @EnableScheduling
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.u.api.client")

@@ -35,9 +35,10 @@ spring:
       simple:
         acknowledge-mode: manual
         prefetch: 10
+  data:
+    redis:
+      host: 192.168.150.101
+      port: 6379
+      password: ${u.redis.password}
 server:
   port: 8085
-data:
-  redis:
-    host: 192.168.150.101
-    port: 6379

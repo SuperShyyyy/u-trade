@@ -1,484 +1,145 @@
-13:43:04:440  INFO 2228 --- [search-service] [main] com.u.search.SearchServiceApplication    : Starting SearchServiceApplication using Java 17.0.17 with PID 2228 (E:\T\u-trade\search-service\target\classes started by zhao in E:\T\u-trade)
-13:43:04:444  INFO 2228 --- [search-service] [main] com.u.search.SearchServiceApplication    : No active profile set, falling back to 1 default profile: "default"
-13:43:04:478  INFO 2228 --- [search-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
-13:43:04:927  INFO 2228 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-13:43:04:945  INFO 2228 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 12 ms. Found 0 Elasticsearch repository interfaces.
-13:43:05:075  INFO 2228 --- [search-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=375dbb1f-507d-32e5-975d-e768bdb0a386
-13:43:05:328  INFO 2228 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
-13:43:05:339  INFO 2228 --- [search-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-13:43:05:339  INFO 2228 --- [search-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
-13:43:05:390  INFO 2228 --- [search-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-13:43:05:390  INFO 2228 --- [search-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 910 ms
-13:43:05:679 ERROR 2228 --- [search-service] [main] c.u.s.service.impl.ItemEsServiceImpl     : ES索引初始化失败
-
-java.net.ConnectException: Connection refused: no further information
-	at org.elasticsearch.client.RestClient.extractAndWrapCause(RestClient.java:934) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:304) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:292) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at co.elastic.clients.transport.rest_client.RestClientHttpClient.performRequest(RestClientHttpClient.java:91) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.transport.ElasticsearchTransportBase.performRequest(ElasticsearchTransportBase.java:144) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient.exists(ElasticsearchIndicesClient.java:666) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient.exists(ElasticsearchIndicesClient.java:682) ~[elasticsearch-java-8.13.4.jar:na]
-	at com.u.search.service.impl.ItemEsServiceImpl.init(ItemEsServiceImpl.java:42) ~[classes/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMethod.invoke(InitDestroyAnnotationBeanPostProcessor.java:457) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMetadata.invokeInitMethods(InitDestroyAnnotationBeanPostProcessor.java:401) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization(InitDestroyAnnotationBeanPostProcessor.java:219) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.applyBeanPostProcessorsBeforeInitialization(AbstractAutowireCapableBeanFactory.java:422) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1798) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:600) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1443) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1353) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:904) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:782) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:237) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1375) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1212) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:562) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:971) ~[spring-context-6.1.13.jar:6.1.13]
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:625) ~[spring-context-6.1.13.jar:6.1.13]
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352) ~[spring-boot-3.3.4.jar:3.3.4]
-	at com.u.search.SearchServiceApplication.main(SearchServiceApplication.java:12) ~[classes/:na]
-Caused by: java.net.ConnectException: Connection refused: no further information
-	at java.base/sun.nio.ch.Net.pollConnect(Native Method) ~[na:na]
-	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:684) ~[na:na]
-	at java.base/sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:946) ~[na:na]
-	at org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor.processEvent(DefaultConnectingIOReactor.java:174) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor.processEvents(DefaultConnectingIOReactor.java:148) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.reactor.AbstractMultiworkerIOReactor.execute(AbstractMultiworkerIOReactor.java:351) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager.execute(PoolingNHttpClientConnectionManager.java:221) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1.run(CloseableHttpAsyncClientBase.java:64) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at java.base/java.lang.Thread.run(Thread.java:842) ~[na:na]
-
-13:43:06:981  INFO 2228 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-13:43:08:403  INFO 2228 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-13:43:08:460  INFO 2228 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8083 (http) with context path '/'
-13:43:08:466  INFO 2228 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
-13:43:08:467  INFO 2228 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
-13:43:08:467  INFO 2228 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
-13:43:08:476  INFO 2228 --- [search-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
-13:43:08:480  INFO 2228 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
-13:43:08:480  INFO 2228 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
-13:43:08:483  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of dc5430fa-02e3-4217-91f2-d7a4aa430874
-13:43:08:485  INFO 2228 --- [search-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->dc5430fa-02e3-4217-91f2-d7a4aa430874
-13:43:08:485  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
-13:43:08:486  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
-13:43:08:486  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
-13:43:08:487  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
-13:43:08:487  INFO 2228 --- [search-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
-13:43:08:604  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1779860588860_192.168.150.1_53007
-13:43:08:604  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
-13:43:08:604  INFO 2228 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Notify connected event to listeners.
-13:43:08:604  INFO 2228 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [dc5430fa-02e3-4217-91f2-d7a4aa430874] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$355/0x00000229013b9dc0
-13:43:08:604  INFO 2228 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
-13:43:08:606  INFO 2228 --- [search-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service search-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
-13:43:08:624  INFO 2228 --- [search-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP search-service 192.168.150.1:8083 register finished
-13:43:09:735  INFO 2228 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-13:43:09:741  INFO 2228 --- [search-service] [main] com.u.search.SearchServiceApplication    : Started SearchServiceApplication in 7.952 seconds (process running for 8.494)
-13:43:09:747  INFO 2228 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
-13:43:09:747  INFO 2228 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
-13:43:09:749  INFO 2228 --- [search-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
-13:43:09:756  INFO 2228 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
-13:43:09:757  INFO 2228 --- [search-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
-14:16:36:579  INFO 2228 --- [search-service] [http-nio-8083-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-14:16:36:579  INFO 2228 --- [search-service] [http-nio-8083-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-14:16:36:580  INFO 2228 --- [search-service] [http-nio-8083-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
-14:16:36:637 ERROR 2228 --- [search-service] [http-nio-8083-exec-1] c.u.s.service.impl.ItemEsServiceImpl     : ES 搜索失败
-
-java.net.ConnectException: Connection refused: no further information
-	at org.elasticsearch.client.RestClient.extractAndWrapCause(RestClient.java:934) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:304) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:292) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at co.elastic.clients.transport.rest_client.RestClientHttpClient.performRequest(RestClientHttpClient.java:91) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.transport.ElasticsearchTransportBase.performRequest(ElasticsearchTransportBase.java:144) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.elasticsearch.ElasticsearchClient.search(ElasticsearchClient.java:1923) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.elasticsearch.ElasticsearchClient.search(ElasticsearchClient.java:1940) ~[elasticsearch-java-8.13.4.jar:na]
-	at com.u.search.service.impl.ItemEsServiceImpl.searchByTitle(ItemEsServiceImpl.java:132) ~[classes/:na]
-	at com.u.search.controller.SearchController.searchItem(SearchController.java:22) ~[classes/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:903) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:564) ~[tomcat-embed-core-10.1.30.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.30.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at java.base/java.lang.Thread.run(Thread.java:842) ~[na:na]
-Caused by: java.net.ConnectException: Connection refused: no further information
-	at java.base/sun.nio.ch.Net.pollConnect(Native Method) ~[na:na]
-	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:684) ~[na:na]
-	at java.base/sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:946) ~[na:na]
-	at org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor.processEvent(DefaultConnectingIOReactor.java:174) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor.processEvents(DefaultConnectingIOReactor.java:148) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.reactor.AbstractMultiworkerIOReactor.execute(AbstractMultiworkerIOReactor.java:351) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager.execute(PoolingNHttpClientConnectionManager.java:221) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1.run(CloseableHttpAsyncClientBase.java:64) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	... 1 common frames omitted
-
-14:16:36:648 ERROR 2228 --- [search-service] [http-nio-8083-exec-1] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: com.u.common.exception.BusinessException: 搜索服务异常] with root cause
-
-com.u.common.exception.BusinessException: 搜索服务异常
-	at com.u.search.service.impl.ItemEsServiceImpl.searchByTitle(ItemEsServiceImpl.java:167) ~[classes/:na]
-	at com.u.search.controller.SearchController.searchItem(SearchController.java:22) ~[classes/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:903) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:564) ~[tomcat-embed-core-10.1.30.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.13.jar:6.1.13]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.30.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.13.jar:6.1.13]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.30.jar:10.1.30]
-	at java.base/java.lang.Thread.run(Thread.java:842) ~[na:na]
-
-14:24:06:493  WARN 2228 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
-14:24:06:493  WARN 2228 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
-14:24:06:495  WARN 2228 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
-14:24:06:495  WARN 2228 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
-14:24:06:617  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
-14:24:06:617  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service search-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
-14:24:06:625  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
-14:24:06:625  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
-14:24:06:625  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
-14:24:06:626  WARN 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
-14:24:06:626  WARN 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
-14:24:06:626  WARN 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
-14:24:06:626  WARN 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->dc5430fa-02e3-4217-91f2-d7a4aa430874
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@79fcb2f[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 817]
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
-14:24:06:626  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@45d938fb[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
-14:24:06:627  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1779860588860_192.168.150.1_53007
-14:24:06:630  INFO 2228 --- [search-service] [nacos-grpc-client-executor-192.168.150.101-479] c.a.n.c.remote.client.grpc.GrpcClient    : [1779860588860_192.168.150.1_53007]Ignore complete event,isRunning:false,isAbandon=false
-14:24:06:632  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@6a908a1d[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 480]
-14:24:06:632  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->dc5430fa-02e3-4217-91f2-d7a4aa430874
-14:24:06:632  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
-14:24:06:632  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
-14:24:06:632  INFO 2228 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
-14:24:11:175  INFO 17704 --- [search-service] [main] com.u.search.SearchServiceApplication    : Starting SearchServiceApplication using Java 17.0.17 with PID 17704 (E:\T\u-trade\search-service\target\classes started by zhao in E:\T\u-trade)
-14:24:11:177  INFO 17704 --- [search-service] [main] com.u.search.SearchServiceApplication    : No active profile set, falling back to 1 default profile: "default"
-14:24:11:202  INFO 17704 --- [search-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
-14:24:11:624  INFO 17704 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-14:24:11:635  INFO 17704 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 8 ms. Found 0 Elasticsearch repository interfaces.
-14:24:11:735  INFO 17704 --- [search-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=375dbb1f-507d-32e5-975d-e768bdb0a386
-14:24:11:956  INFO 17704 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
-14:24:11:968  INFO 17704 --- [search-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-14:24:11:968  INFO 17704 --- [search-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
-14:24:12:024  INFO 17704 --- [search-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-14:24:12:024  INFO 17704 --- [search-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 820 ms
-14:24:12:347 ERROR 17704 --- [search-service] [main] c.u.s.service.impl.ItemEsServiceImpl     : ES索引初始化失败
-
-java.io.IOException: 不知道这样的主机。 (http:192.168.150.101)
-	at org.elasticsearch.client.RestClient.extractAndWrapCause(RestClient.java:939) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:304) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:292) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	at co.elastic.clients.transport.rest_client.RestClientHttpClient.performRequest(RestClientHttpClient.java:91) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.transport.ElasticsearchTransportBase.performRequest(ElasticsearchTransportBase.java:144) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient.exists(ElasticsearchIndicesClient.java:666) ~[elasticsearch-java-8.13.4.jar:na]
-	at co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient.exists(ElasticsearchIndicesClient.java:682) ~[elasticsearch-java-8.13.4.jar:na]
-	at com.u.search.service.impl.ItemEsServiceImpl.init(ItemEsServiceImpl.java:42) ~[classes/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMethod.invoke(InitDestroyAnnotationBeanPostProcessor.java:457) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMetadata.invokeInitMethods(InitDestroyAnnotationBeanPostProcessor.java:401) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization(InitDestroyAnnotationBeanPostProcessor.java:219) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.applyBeanPostProcessorsBeforeInitialization(AbstractAutowireCapableBeanFactory.java:422) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1798) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:600) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveCandidate(DependencyDescriptor.java:254) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1443) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1353) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:904) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:782) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:237) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1375) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1212) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:562) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:971) ~[spring-context-6.1.13.jar:6.1.13]
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:625) ~[spring-context-6.1.13.jar:6.1.13]
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352) ~[spring-boot-3.3.4.jar:3.3.4]
-	at com.u.search.SearchServiceApplication.main(SearchServiceApplication.java:12) ~[classes/:na]
-Caused by: java.net.UnknownHostException: 不知道这样的主机。 (http:192.168.150.101)
-	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method) ~[na:na]
-	at java.base/java.net.InetAddress$PlatformNameService.lookupAllHostAddr(InetAddress.java:933) ~[na:na]
-	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1543) ~[na:na]
-	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:852) ~[na:na]
-	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1532) ~[na:na]
-	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1384) ~[na:na]
-	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1305) ~[na:na]
-	at org.apache.http.impl.conn.SystemDefaultDnsResolver.resolve(SystemDefaultDnsResolver.java:45) ~[httpclient-4.5.13.jar:4.5.13]
-	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager$InternalAddressResolver.resolveRemoteAddress(PoolingNHttpClientConnectionManager.java:666) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager$InternalAddressResolver.resolveRemoteAddress(PoolingNHttpClientConnectionManager.java:637) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.nio.pool.AbstractNIOConnPool.processPendingRequest(AbstractNIOConnPool.java:472) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.nio.pool.AbstractNIOConnPool.lease(AbstractNIOConnPool.java:280) ~[httpcore-nio-4.4.16.jar:4.4.16]
-	at org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager.requestConnection(PoolingNHttpClientConnectionManager.java:295) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.client.AbstractClientExchangeHandler.requestConnection(AbstractClientExchangeHandler.java:381) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.client.DefaultClientExchangeHandlerImpl.start(DefaultClientExchangeHandlerImpl.java:130) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase.execute(CloseableHttpAsyncClientBase.java:116) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.apache.http.impl.nio.client.InternalHttpAsyncClient.execute(InternalHttpAsyncClient.java:138) ~[httpasyncclient-4.1.5.jar:4.1.5]
-	at org.elasticsearch.client.RestClient.performRequest(RestClient.java:300) ~[elasticsearch-rest-client-8.13.4.jar:8.13.4]
-	... 45 common frames omitted
-
-14:24:13:628  INFO 17704 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-14:24:13:732  WARN 17704 --- [search-service] [main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'elasticsearchRestClientBuilder' defined in class path resource [org/springframework/boot/autoconfigure/elasticsearch/ElasticsearchRestClientConfigurations$RestClientBuilderConfiguration.class]: Failed to instantiate [org.elasticsearch.client.RestClientBuilder]: Factory method 'elasticsearchRestClientBuilder' threw exception with message: Host name may not be null
-14:24:13:735  INFO 17704 --- [search-service] [main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
-14:24:13:749  INFO 17704 --- [search-service] [main] .s.b.a.l.ConditionEvaluationReportLogger : 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-14:24:13:764 ERROR 17704 --- [search-service] [main] o.s.boot.SpringApplication               : Application run failed
-
-org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'elasticsearchRestClientBuilder' defined in class path resource [org/springframework/boot/autoconfigure/elasticsearch/ElasticsearchRestClientConfigurations$RestClientBuilderConfiguration.class]: Failed to instantiate [org.elasticsearch.client.RestClientBuilder]: Factory method 'elasticsearchRestClientBuilder' threw exception with message: Host name may not be null
-	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:648) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:636) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1355) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1185) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:562) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:971) ~[spring-context-6.1.13.jar:6.1.13]
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:625) ~[spring-context-6.1.13.jar:6.1.13]
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363) ~[spring-boot-3.3.4.jar:3.3.4]
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352) ~[spring-boot-3.3.4.jar:3.3.4]
-	at com.u.search.SearchServiceApplication.main(SearchServiceApplication.java:12) ~[classes/:na]
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.elasticsearch.client.RestClientBuilder]: Factory method 'elasticsearchRestClientBuilder' threw exception with message: Host name may not be null
-	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:178) ~[spring-beans-6.1.13.jar:6.1.13]
-	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:644) ~[spring-beans-6.1.13.jar:6.1.13]
-	... 19 common frames omitted
-Caused by: java.lang.IllegalArgumentException: Host name may not be null
-	at org.apache.http.util.Args.containsNoBlanks(Args.java:81) ~[httpcore-4.4.16.jar:4.4.16]
-	at org.apache.http.HttpHost.<init>(HttpHost.java:80) ~[httpcore-4.4.16.jar:4.4.16]
-	at org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientConfigurations$RestClientBuilderConfiguration.lambda$elasticsearchRestClientBuilder$0(ElasticsearchRestClientConfigurations.java:93) ~[spring-boot-autoconfigure-3.3.4.jar:3.3.4]
-	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197) ~[na:na]
-	at java.base/java.util.AbstractList$RandomAccessSpliterator.forEachRemaining(AbstractList.java:720) ~[na:na]
-	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509) ~[na:na]
-	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
-	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:575) ~[na:na]
-	at java.base/java.util.stream.AbstractPipeline.evaluateToArrayNode(AbstractPipeline.java:260) ~[na:na]
-	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:616) ~[na:na]
-	at org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientConfigurations$RestClientBuilderConfiguration.elasticsearchRestClientBuilder(ElasticsearchRestClientConfigurations.java:94) ~[spring-boot-autoconfigure-3.3.4.jar:3.3.4]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:146) ~[spring-beans-6.1.13.jar:6.1.13]
-	... 20 common frames omitted
-
-14:27:31:641  WARN 17704 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
-14:27:31:641  WARN 17704 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
-14:27:36:372  INFO 24408 --- [search-service] [main] com.u.search.SearchServiceApplication    : Starting SearchServiceApplication using Java 17.0.17 with PID 24408 (E:\T\u-trade\search-service\target\classes started by zhao in E:\T\u-trade)
-14:27:36:373  INFO 24408 --- [search-service] [main] com.u.search.SearchServiceApplication    : No active profile set, falling back to 1 default profile: "default"
-14:27:36:405  INFO 24408 --- [search-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
-14:27:36:800  INFO 24408 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
-14:27:36:811  INFO 24408 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 8 ms. Found 0 Elasticsearch repository interfaces.
-14:27:36:912  INFO 24408 --- [search-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=375dbb1f-507d-32e5-975d-e768bdb0a386
-14:27:37:132  INFO 24408 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
-14:27:37:144  INFO 24408 --- [search-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-14:27:37:144  INFO 24408 --- [search-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
-14:27:37:202  INFO 24408 --- [search-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-14:27:37:202  INFO 24408 --- [search-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 795 ms
-14:27:38:857  INFO 24408 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-14:27:40:255  INFO 24408 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-14:27:40:303  INFO 24408 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8083 (http) with context path '/'
-14:27:40:308  INFO 24408 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
-14:27:40:310  INFO 24408 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
-14:27:40:310  INFO 24408 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
-14:27:40:318  INFO 24408 --- [search-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
-14:27:40:322  INFO 24408 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
-14:27:40:323  INFO 24408 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
-14:27:40:327  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of e0f3fa27-a748-49c9-be4f-38bd44083403
-14:27:40:329  INFO 24408 --- [search-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->e0f3fa27-a748-49c9-be4f-38bd44083403
-14:27:40:329  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
-14:27:40:329  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
-14:27:40:329  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
-14:27:40:330  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
-14:27:40:330  INFO 24408 --- [search-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
-14:27:40:458  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1779863260709_192.168.150.1_49832
-14:27:40:459  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
-14:27:40:459  INFO 24408 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Notify connected event to listeners.
-14:27:40:459  INFO 24408 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [e0f3fa27-a748-49c9-be4f-38bd44083403] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$355/0x00000242933b7750
-14:27:40:459  INFO 24408 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
-14:27:40:461  INFO 24408 --- [search-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service search-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
-14:27:40:475  INFO 24408 --- [search-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP search-service 192.168.150.1:8083 register finished
-14:27:41:548  INFO 24408 --- [search-service] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
-14:27:41:554  INFO 24408 --- [search-service] [main] com.u.search.SearchServiceApplication    : Started SearchServiceApplication in 8.043 seconds (process running for 8.681)
-14:27:41:559  INFO 24408 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
-14:27:41:559  INFO 24408 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
-14:27:41:561  INFO 24408 --- [search-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
-14:27:41:566  INFO 24408 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
-14:27:41:566  INFO 24408 --- [search-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
-14:28:01:036  INFO 24408 --- [search-service] [http-nio-8083-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-14:28:01:036  INFO 24408 --- [search-service] [http-nio-8083-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-14:28:01:037  INFO 24408 --- [search-service] [http-nio-8083-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
-14:28:02:223  WARN 24408 --- [search-service] [http-nio-8083-exec-1] ration$PageModule$WarningLoggingModifier : Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
-	For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
-	or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
-
-14:45:49:584  WARN 24408 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
-14:45:49:584  WARN 24408 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
-14:45:49:584  WARN 24408 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
-14:45:49:584  WARN 24408 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
-14:45:49:766  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
-14:45:49:766  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service search-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
-14:45:49:770  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
-14:45:49:770  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
-14:45:49:770  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
-14:45:49:770  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
-14:45:49:770  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
-14:45:49:771  WARN 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
-14:45:49:771  WARN 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
-14:45:49:771  WARN 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
-14:45:49:771  WARN 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->e0f3fa27-a748-49c9-be4f-38bd44083403
-14:45:49:771  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@30c14288[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 362]
-14:45:49:772  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
-14:45:49:772  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@5d6d2114[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
-14:45:49:772  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1779863260709_192.168.150.1_49832
-14:45:49:774  INFO 24408 --- [search-service] [nacos-grpc-client-executor-192.168.150.101-220] c.a.n.c.remote.client.grpc.GrpcClient    : [1779863260709_192.168.150.1_49832]Ignore complete event,isRunning:false,isAbandon=false
-14:45:49:776  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@4fa6f4d0[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 221]
-14:45:49:776  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->e0f3fa27-a748-49c9-be4f-38bd44083403
-14:45:49:776  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
-14:45:49:776  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
-14:45:49:776  INFO 24408 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
+20:44:44:073  INFO 1984 --- [search-service] [main] com.u.search.SearchServiceApplication    : Starting SearchServiceApplication using Java 17.0.17 with PID 1984 (E:\T\u-trade\search-service\target\classes started by zhao in E:\T\u-trade)
+20:44:44:076  INFO 1984 --- [search-service] [main] com.u.search.SearchServiceApplication    : No active profile set, falling back to 1 default profile: "default"
+20:44:44:105  INFO 1984 --- [search-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
+20:44:44:574  INFO 1984 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+20:44:44:594  INFO 1984 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 0 Elasticsearch repository interfaces.
+20:44:44:706  INFO 1984 --- [search-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=6c037f1e-37c0-3c74-93b7-4e6f7dd167b2
+20:44:44:901  INFO 1984 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
+20:44:44:911  INFO 1984 --- [search-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+20:44:44:911  INFO 1984 --- [search-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+20:44:44:964  INFO 1984 --- [search-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+20:44:44:964  INFO 1984 --- [search-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 857 ms
+20:44:45:314  INFO 1984 --- [search-service] [main] c.u.search.config.WebMvcConfiguration    : 开始注册自定义拦截器...
+20:44:45:917  INFO 1984 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8083 (http) with context path '/'
+20:44:45:921  INFO 1984 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
+20:44:45:922  INFO 1984 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+20:44:45:923  INFO 1984 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
+20:44:45:927  INFO 1984 --- [search-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+20:44:45:930  INFO 1984 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+20:44:45:930  INFO 1984 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+20:44:45:933  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of f5d8a436-a460-4d08-9963-83c25a7732d5
+20:44:45:934  INFO 1984 --- [search-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->f5d8a436-a460-4d08-9963-83c25a7732d5
+20:44:45:934  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
+20:44:45:934  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+20:44:45:935  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+20:44:45:935  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
+20:44:45:935  INFO 1984 --- [search-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
+20:44:46:049  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1782823485162_192.168.150.1_53221
+20:44:46:049  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+20:44:46:049  INFO 1984 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Notify connected event to listeners.
+20:44:46:049  INFO 1984 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$355/0x000002253e3b9470
+20:44:46:049  INFO 1984 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
+20:44:46:050  INFO 1984 --- [search-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service search-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
+20:44:46:060  INFO 1984 --- [search-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP search-service 192.168.150.1:8083 register finished
+20:44:46:141  INFO 1984 --- [search-service] [main] com.u.search.SearchServiceApplication    : Started SearchServiceApplication in 3.528 seconds (process running for 4.003)
+20:44:46:145  INFO 1984 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
+20:44:46:145  INFO 1984 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
+20:44:46:147  INFO 1984 --- [search-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
+20:44:46:153  INFO 1984 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
+20:44:46:153  INFO 1984 --- [search-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
+20:45:01:264  WARN 1984 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+20:45:01:264  WARN 1984 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+20:45:01:264  WARN 1984 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
+20:45:01:265  WARN 1984 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
+20:45:01:421  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
+20:45:01:422  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service search-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
+20:45:01:427  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
+20:45:01:427  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
+20:45:01:428  WARN 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+20:45:01:428  WARN 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+20:45:01:428  WARN 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+20:45:01:428  WARN 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->f5d8a436-a460-4d08-9963-83c25a7732d5
+20:45:01:428  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@7108fc8f[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 5]
+20:45:01:429  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
+20:45:01:429  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@65806f27[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+20:45:01:429  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1782823485162_192.168.150.1_53221
+20:45:01:431  WARN 1984 --- [search-service] [nacos-grpc-client-executor-192.168.150.101-10] c.a.n.c.remote.client.grpc.GrpcClient    : [1782823485162_192.168.150.1_53221]Ignore error event,isRunning:false,isAbandon=false
+20:45:01:432  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@29bd900b[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 12]
+20:45:01:432  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->f5d8a436-a460-4d08-9963-83c25a7732d5
+20:45:01:432  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
+20:45:01:432  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
+20:45:01:432  INFO 1984 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop
+20:45:01:433  INFO 1984 --- [search-service] [com.alibaba.nacos.client.remote.worker.1] com.alibaba.nacos.common.remote.client   : [f5d8a436-a460-4d08-9963-83c25a7732d5] Server healthy check fail, currentConnection = 1782823485162_192.168.150.1_53221
+20:45:05:162  INFO 12552 --- [search-service] [main] com.u.search.SearchServiceApplication    : Starting SearchServiceApplication using Java 17.0.17 with PID 12552 (E:\T\u-trade\search-service\target\classes started by zhao in E:\T\u-trade)
+20:45:05:164  INFO 12552 --- [search-service] [main] com.u.search.SearchServiceApplication    : No active profile set, falling back to 1 default profile: "default"
+20:45:05:197  INFO 12552 --- [search-service] [main] c.a.c.n.c.NacosConfigDataLoader          : [Nacos Config] Load config[dataId=shared-application.yml, group=DEFAULT_GROUP] success
+20:45:05:693  INFO 12552 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+20:45:05:707  INFO 12552 --- [search-service] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 11 ms. Found 0 Elasticsearch repository interfaces.
+20:45:05:843  INFO 12552 --- [search-service] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=6c037f1e-37c0-3c74-93b7-4e6f7dd167b2
+20:45:06:075  INFO 12552 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
+20:45:06:087  INFO 12552 --- [search-service] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+20:45:06:087  INFO 12552 --- [search-service] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+20:45:06:142  INFO 12552 --- [search-service] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+20:45:06:142  INFO 12552 --- [search-service] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 943 ms
+20:45:06:479  INFO 12552 --- [search-service] [main] c.u.search.config.WebMvcConfiguration    : 开始注册自定义拦截器...
+20:45:07:175  INFO 12552 --- [search-service] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8083 (http) with context path '/'
+20:45:07:181  INFO 12552 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ans.namespace attribute : null
+20:45:07:181  INFO 12552 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from ALIBABA_ALIWARE_NAMESPACE attribute :null
+20:45:07:182  INFO 12552 --- [search-service] [main] com.alibaba.nacos.client.naming          : initializer namespace from namespace attribute :null
+20:45:07:187  INFO 12552 --- [search-service] [main] com.alibaba.nacos.client.naming          : FailoverDataSource type is class com.alibaba.nacos.client.naming.backups.datasource.DiskFailoverDataSource
+20:45:07:190  INFO 12552 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+20:45:07:190  INFO 12552 --- [search-service] [main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+20:45:07:193  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [RpcClientFactory] create a new rpc client of 8ab3365b-5a3b-47a6-b74f-c8c8380f96b4
+20:45:07:194  INFO 12552 --- [search-service] [main] com.alibaba.nacos.client.naming          : Create naming rpc client for uuid->8ab3365b-5a3b-47a6-b74f-c8c8380f96b4
+20:45:07:195  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] RpcClient init, ServerListFactory = com.alibaba.nacos.client.naming.core.ServerListManager
+20:45:07:195  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Registry connection listener to current client:com.alibaba.nacos.client.naming.remote.gprc.redo.NamingGrpcRedoService
+20:45:07:195  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Register server push request handler:com.alibaba.nacos.client.naming.remote.gprc.NamingPushRequestHandler
+20:45:07:195  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Try to connect to server on start up, server: {serverIp = '192.168.150.101', server main port = 8848}
+20:45:07:195  INFO 12552 --- [search-service] [main] c.a.n.c.remote.client.grpc.GrpcClient    : grpc client connection server:192.168.150.101 ip,serverPort:9848,grpcTslConfig:{"sslProvider":"","enableTls":false,"mutualAuthEnable":false,"trustAll":false}
+20:45:07:331  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Success to connect to server [192.168.150.101:8848] on start up, connectionId = 1782823506444_192.168.150.1_53240
+20:45:07:331  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$ConnectResetRequestHandler
+20:45:07:331  INFO 12552 --- [search-service] [main] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Register server push request handler:com.alibaba.nacos.common.remote.client.RpcClient$$Lambda$355/0x000001fe013b6ff8
+20:45:07:331  INFO 12552 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.common.remote.client   : [8ab3365b-5a3b-47a6-b74f-c8c8380f96b4] Notify connected event to listeners.
+20:45:07:331  INFO 12552 --- [search-service] [com.alibaba.nacos.client.remote.worker.0] com.alibaba.nacos.client.naming          : Grpc connection connect
+20:45:07:332  INFO 12552 --- [search-service] [main] com.alibaba.nacos.client.naming          : [REGISTER-SERVICE] public registering service search-service with instance Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={IPv6=null, preserved.register.source=SPRING_CLOUD}}
+20:45:07:348  INFO 12552 --- [search-service] [main] c.a.c.n.registry.NacosServiceRegistry    : nacos registry, DEFAULT_GROUP search-service 192.168.150.1:8083 register finished
+20:45:07:445  INFO 12552 --- [search-service] [main] com.u.search.SearchServiceApplication    : Started SearchServiceApplication in 4.02 seconds (process running for 4.679)
+20:45:07:451  INFO 12552 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : config listener notify warn timeout millis use default 60000 millis 
+20:45:07:451  INFO 12552 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : nacos.cache.data.init.snapshot = true 
+20:45:07:452  INFO 12552 --- [search-service] [main] c.a.n.client.config.impl.ClientWorker    : [fixed-192.168.150.101_8848] [subscribe] shared-application.yml+DEFAULT_GROUP
+20:45:07:460  INFO 12552 --- [search-service] [main] c.a.nacos.client.config.impl.CacheData   : [fixed-192.168.150.101_8848] [add-listener] ok, tenant=, dataId=shared-application.yml, group=DEFAULT_GROUP, cnt=1
+20:45:07:460  INFO 12552 --- [search-service] [main] c.a.c.n.refresh.NacosContextRefresher    : [Nacos Config] Listening config: dataId=shared-application.yml, group=DEFAULT_GROUP
+20:49:51:635  WARN 12552 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Start destroying common HttpClient
+20:49:51:635  WARN 12552 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Start destroying Publisher
+20:49:51:636  WARN 12552 --- [search-service] [Thread-3] c.a.nacos.common.notify.NotifyCenter     : [NotifyCenter] Destruction of the end
+20:49:51:637  WARN 12552 --- [search-service] [Thread-1] c.a.n.common.http.HttpClientBeanHolder   : [HttpClientBeanHolder] Destruction of the end
+20:49:51:896  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registering from Nacos Server now...
+20:49:51:897  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [DEREGISTER-SERVICE] public deregistering service search-service with instance: Instance{instanceId='null', ip='192.168.150.1', port=8083, weight=1.0, healthy=true, enabled=true, ephemeral=true, clusterName='DEFAULT', serviceName='null', metadata={}}
+20:49:51:902  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] c.a.c.n.registry.NacosServiceRegistry    : De-registration finished.
+20:49:51:902  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown begin
+20:49:51:902  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown begin
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.backups.FailoverReactor do shutdown stop
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.cache.ServiceInfoHolder do shutdown stop
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown begin
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown begin
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServiceInfoUpdateService do shutdown stop
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown begin
+20:49:51:903  WARN 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+20:49:51:903  WARN 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.core.ServerListManager do shutdown stop
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown begin
+20:49:51:903  WARN 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Start destroying NacosRestTemplate
+20:49:51:903  WARN 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : [NamingHttpClientManager] Destruction of the end
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.http.NamingHttpClientProxy do shutdown stop
+20:49:51:903  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown naming grpc client proxy for  uuid->8ab3365b-5a3b-47a6-b74f-c8c8380f96b4
+20:49:51:904  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : Shutdown grpc redo service executor java.util.concurrent.ScheduledThreadPoolExecutor@40d3bdcf[Running, pool size = 1, active threads = 0, queued tasks = 1, completed tasks = 94]
+20:49:51:904  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown rpc client, set status to shutdown
+20:49:51:904  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Shutdown client event executor java.util.concurrent.ScheduledThreadPoolExecutor@b0cd9ee[Running, pool size = 2, active threads = 2, queued tasks = 0, completed tasks = 0]
+20:49:51:904  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.common.remote.client   : Close current connection 1782823506444_192.168.150.1_53240
+20:49:51:906  INFO 12552 --- [search-service] [nacos-grpc-client-executor-192.168.150.101-70] c.a.n.c.remote.client.grpc.GrpcClient    : [1782823506444_192.168.150.1_53240]Ignore complete event,isRunning:false,isAbandon=false
+20:49:51:907  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.remote.client.grpc.GrpcClient    : Shutdown grpc executor java.util.concurrent.ThreadPoolExecutor@512a8e15[Running, pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 71]
+20:49:51:907  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : shutdown and remove naming rpc client  for uuid ->8ab3365b-5a3b-47a6-b74f-c8c8380f96b4
+20:49:51:908  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialWatcher   : [null] CredentialWatcher is stopped
+20:49:51:908  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] c.a.n.c.a.r.identify.CredentialService   : [null] CredentialService is freed
+20:49:51:908  INFO 12552 --- [search-service] [SpringApplicationShutdownHook] com.alibaba.nacos.client.naming          : com.alibaba.nacos.client.naming.remote.NamingClientProxyDelegate do shutdown stop

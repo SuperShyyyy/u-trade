@@ -65,5 +65,7 @@ public interface IOrderService extends IService<Order> {
 
     void cancelOrderInternal(Long orderId);
 
+    void cancelOrderInternal(Long orderId, String cancelReason);
+
     void processSingleOrderConfirm(Long orderId);
 }

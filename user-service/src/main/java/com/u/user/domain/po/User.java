@@ -3,6 +3,7 @@ package com.u.user.domain.po;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.Version;
 import java.time.LocalDateTime;
 import java.io.Serializable;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -51,6 +52,10 @@ public class User implements Serializable {
 
     @Schema(description = "状态: 1-正常, 0-禁用")
     private Integer status;
+
+    @Version
+    @Schema(description = "乐观锁版本号")
+    private Integer version;
 
     private LocalDateTime createTime;
 

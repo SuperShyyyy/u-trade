@@ -2,14 +2,18 @@ server:
   port: 8080
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG  # 查看路由匹配和过滤器执行情况
-    reactor.netty: DEBUG                      # 查看底层网络转发情况
+    org.springframework.cloud.gateway: WARN
+    reactor.netty: WARN
 spring:
   config:
     import:
       - optional:classpath:application-secret.yml
   application:
     name: gateway
+  data:
+    redis:
+      host: 192.168.150.101
+      port: 6379
   cloud:
     nacos:
       discovery:
@@ -32,9 +36,10 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
+            # TODO 生产环境需替换为具体前端域名，如 "https://trade.example.com"
+            allowedOriginPatterns: "${CORS_ALLOWED_ORIGINS:*}"
+            allowedMethods: "GET,POST,PUT,DELETE,OPTIONS"
+            allowedHeaders: "Authorization,Content-Type,token,X-Gateway-Auth"
             allowCredentials: true
             maxAge: 3600
       routes:
@@ -59,7 +64,7 @@ spring:
         - id: chat-service
           uri: lb://chat-service
           predicates:
-            - Path=/user/chat/**,/user/chat-message/**,/user/chat-conversation/**
+            - Path=/user/chat/**,/user/chat-message/**,/user/chat-conversation/**,/ws/**
           order: 10
 
         - id: search-service
@@ -82,10 +87,10 @@ spring:
 
 u:
   gateway:
-    auth-secret: ${GATEWAY_AUTH_SECRET}
+    auth-secret: u-trade-gateway-jwt-secret-demo
   swagger:
     title: u-trade接口文档
     description: u-trade接口文档
     email: d726760649@gmail.com
-    concat: zhao
+    contact: zhao
     package: com.u.admin.controller

@@ -37,8 +37,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 "/v3/api-docs/**",
                 "/swagger-resources/**",
                 "/favicon.ico",
-                "/error",
-                "/inner/**"
+                "/error"
         };
 
         registry.addInterceptor(jwtAuthInterceptor)
@@ -49,9 +48,13 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 .addPathPatterns("/user/**")
                 .excludePathPatterns(excludePaths);
 
+        registry.addInterceptor(jwtAuthInterceptor)
+                .addPathPatterns("/inner/**");
+
     }
 
     @Bean
+    @org.springframework.context.annotation.Profile("!prod")
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
@@ -61,6 +64,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
+    @org.springframework.context.annotation.Profile("!prod")
     public GroupedOpenApi itemApi() {
         return GroupedOpenApi.builder()
                 .group("item")
@@ -71,10 +75,10 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("*")
+                .allowedOriginPatterns("${cors.allowed-origins:*}")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(false)
+                .allowedHeaders("Authorization", "Content-Type", "token", "X-Gateway-Auth")
+                .allowCredentials(true)
                 .maxAge(3600);
     }
 

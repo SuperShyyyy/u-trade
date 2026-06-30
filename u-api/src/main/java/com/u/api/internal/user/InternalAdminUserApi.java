@@ -37,4 +37,10 @@ public interface InternalAdminUserApi {
      */
     @GetMapping("/credit-scores")
     Result<Map<Long, Integer>> getUserCreditScores(@RequestParam("userIds") List<Long> userIds);
+
+    /**
+     * 重置用户密码
+     */
+    @PostMapping("/reset-password")
+    Result<Void> resetPassword(@RequestParam("userId") Long userId, @RequestParam("newPassword") String newPassword);
 }

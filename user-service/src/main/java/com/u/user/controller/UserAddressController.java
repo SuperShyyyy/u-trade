@@ -8,7 +8,8 @@ import com.u.common.result.Result;
 import com.u.user.service.IUserAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -22,9 +23,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/user/address")
 @Tag(name = "用户地址接口")
+@RequiredArgsConstructor
 public class UserAddressController {
-    @Autowired
-    private IUserAddressService userAddressService;
+
+    private final IUserAddressService userAddressService;
     @Operation(summary = "分页查询用户地址")
     @GetMapping("/list")
     public Result<PageDTO<UserAddressVO>> listAddresses(
@@ -39,14 +41,14 @@ public class UserAddressController {
     }
     @Operation(summary = "新增地址")
     @PostMapping
-    public Result addAddress(@RequestBody UserAddressDTO dto) {
+    public Result addAddress(@RequestBody @Valid UserAddressDTO dto) {
         userAddressService.addAddress(dto);
         return Result.success();
     }
 
     @Operation(summary = "更新地址")
     @PutMapping
-    public Result updateAddress(@RequestBody UserAddressDTO dto) {
+    public Result updateAddress(@RequestBody @Valid UserAddressDTO dto) {
         userAddressService.updateAddress(dto);
         return Result.success();
     }

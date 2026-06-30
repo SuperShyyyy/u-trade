@@ -19,7 +19,7 @@ public class PageDTO<T> implements Serializable {
     public static <T> PageDTO<T> of(IPage<T> page) {
         return new PageDTO<>(
                 page.getTotal(),
-                page.getSize(),
+                page.getPages(),
                 page.getCurrent(),
                 page.getRecords()
         );
