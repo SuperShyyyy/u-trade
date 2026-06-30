@@ -1,15 +1,18 @@
 # u-trade
 
 `u-trade` 是一套基于 Spring Boot 3 + Spring Cloud Alibaba + MyBatis-Plus 的二手交易微服务项目。
+项目原型重构自一个 Spring Boot 单体应用：
 
-当前仓库已经按微服务方式拆分为 `gateway`、业务服务、`u-api` 契约层和 `u-common` 公共层，外部请求统一先进入 `gateway`，通过 JWT 校验后，再由 Nacos 服务发现转发到对应服务。
+原单体项目地址：https://github.com/SuperShyyyy/sec-trade
 
-本文档包含：
+在原有单体架构的基础上，本项目完成了服务拆分与微服务化重构，引入 Spring Cloud Alibaba 体系，实现了服务治理、统一网关、配置中心与分布式调用能力。
+
+当前系统采用典型微服务架构，核心技术栈包括：
 
 - 项目架构说明
-- 模块职责和启动顺序
+- 模块职责和启动顺序 
 - 环境依赖与端口规划
-- Nacos 配置中心完整约定
+- Nacos 配置中心完整约定 
 - 数据库建库建表示例
 - 本地运行步骤
 - 当前代码中的已知限制与建议
